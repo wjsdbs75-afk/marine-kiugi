@@ -17,7 +17,7 @@
 
 ## 원본은 `game.html` 하나
 
-`game.html` 은 아티팩트에 게시하는 파일 그대로다. `<!doctype>`, `<html>`, `<head>`, `<body>` 없이 본문만 들어 있다 (아티팩트는 게시할 때 뼈대를 씌우고, Pages 용 뼈대는 `tools/build_site.py` 가 씌운다). 3.6MB 이고 352~354번째 줄은 base64 자원이라 아주 길다. 통째로 읽지 말고 필요한 줄만 읽고, 고칠 때는 Edit 로 해당 부분만 바꾼다.
+`game.html` 은 아티팩트에 게시하는 파일 그대로다. `<!doctype>`, `<html>`, `<head>`, `<body>` 없이 본문만 들어 있다 (아티팩트는 게시할 때 뼈대를 씌우고, Pages 용 뼈대는 `tools/build_site.py` 가 씌운다). 4MB 남짓이고 base64 자원 줄(`BGM_B64`, `SHOT_B64`, `ATLAS_URL`, `MEDIC_URL` 등)은 한 줄이 수십 KB~2MB 라 아주 길다. 통째로 읽지 말고 필요한 줄만 읽고, 고칠 때는 Edit 로 해당 부분만 바꾼다.
 
 ## 게임을 고칠 때 순서
 
