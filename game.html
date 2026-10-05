@@ -395,7 +395,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.24', VERSION_DATE = '2026.10.05', VERSION_NOTE = '위생병 합류: 따라다니며 치료';   // 게시할 때마다 올린다
+const VERSION = 'v0.25', VERSION_DATE = '2026.10.05', VERSION_NOTE = '탄속 1.5배, 화력 강화에 따라 예광탄 색이 바뀜';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1028,18 +1028,22 @@ function drawBullet(c, b) {
     if (b.elem === 'fire') {         // 소이탄: 흔들리는 불꽃 꼬리
       for (let i = 0; i < 3; i++) { const fx = -6 - i * 6, w = (3.6 - i * 0.8) * (1 + Math.sin(t + i * 2) * 0.25), fy = Math.sin(t * 0.7 + i * 1.9) * 1.6; c.fillStyle = i ? 'rgba(255,120,30,.75)' : 'rgba(255,190,60,.9)'; c.beginPath(); c.moveTo(fx + 5, fy - w); c.quadraticCurveTo(fx - 9, fy, fx + 5, fy + w); c.closePath(); c.fill(); }
     } else {                         // 예광 꼬리: 가늘게 사라진다. 총구 뒤로 넘어가지 않게 날아온 거리까지만
-      const tl = Math.min(b.shape === 'needle' ? 56 : b.shape === 'ball' ? 16 : 34, (b.age || 0) * BSPD / k);
-      if (tl > 3) { c.fillStyle = b.shape === 'needle' ? 'rgba(200,238,255,.55)' : 'rgba(255,240,185,.5)'; poly(c, [-tl, 0, -2, -1.15, -2, 1.15]); c.fill(); }
+      const tr = TRACER[b.tier || 0], tl = Math.min((b.shape === 'needle' ? 64 : b.shape === 'ball' ? 18 : 44) + tr.len, (b.age || 0) * BSPD / k);
+      if (tl > 3) {
+        const tw = 1.15 + 0.35 * (b.tier || 0), gw = 3 + 1.1 * (b.tier || 0);     // 등급이 오를수록 꼬리가 굵어지고 빛이 번진다
+        if (tr.glow) { c.fillStyle = tr.glow; poly(c, [-tl * 0.85, 0, -1, -gw, 4, 0, -1, gw]); c.fill(); ell(c, 1.5, 0, gw + 2.5, gw + 1); c.fill(); }
+        c.fillStyle = b.tier ? tr.tail : b.shape === 'needle' ? 'rgba(200,238,255,.55)' : tr.tail; poly(c, [-tl, 0, -2, -tw, -2, tw]); c.fill();
+      }
     }
     c.strokeStyle = OUT; c.lineWidth = 1.3;
     if (b.shape === 'needle') {      // 관통탄: 가늘고 긴 철갑 탄심
-      poly(c, [-6, 0, -3, -1.35, 5, -1.2, 10.5, 0, 5, 1.2, -3, 1.35]); c.fillStyle = b.elem === 'fire' ? '#ffb070' : '#f1f6ff'; c.fill(); c.stroke();
+      poly(c, [-6, 0, -3, -1.35, 5, -1.2, 10.5, 0, 5, 1.2, -3, 1.35]); c.fillStyle = b.elem === 'fire' ? '#ffb070' : b.tier ? TRACER[b.tier].head : '#f1f6ff'; c.fill(); c.stroke();
     } else if (b.shape === 'ball') { // 도탄: 회전하는 쇠구슬
       c.fillStyle = 'rgba(210,220,235,.35)'; ell(c, -5, 0, 3.2, 3.2); c.fill(); ell(c, -9, 0, 2.4, 2.4); c.fill();
-      ell(c, 0, 0, 3.8, 3.8); c.fillStyle = b.elem === 'fire' ? '#ffb070' : '#c9d3e4'; c.fill(); c.stroke();
+      ell(c, 0, 0, 3.8, 3.8); c.fillStyle = b.elem === 'fire' ? '#ffb070' : b.tier ? TRACER[b.tier].head : '#c9d3e4'; c.fill(); c.stroke();
       c.strokeStyle = '#ffffff'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 2.2, t, t + 1.7); c.stroke();
     } else {                         // 기본: 작은 탄두
-      rrect(c, -3, -1.6, 8.5, 3.2, 1.6); c.fillStyle = b.elem === 'fire' ? '#ff9a3c' : '#ffd35a'; c.fill(); c.stroke();
+      rrect(c, -3, -1.6, 8.5, 3.2, 1.6); c.fillStyle = b.elem === 'fire' ? '#ff9a3c' : TRACER[b.tier || 0].head; c.fill(); c.stroke();
       c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(-1.2, -0.95, 4.4, 0.75);
     }
   }
@@ -1107,7 +1111,15 @@ let G = null;                 // 현재 전투 상태
 let appState = 'lobby';       // lobby | run
 let T = 0;                    // 전체 시간
 let simSteps = 1;             // 배속 (x1 / x2)
-const RANGE = 215, BSPD = 520;
+const RANGE = 215, BSPD = 780;   // 탄속: 빨라야 총알처럼 보인다 (예전 520)
+// 탄환 등급: 이번 전투에서 화력 강화(강화 탄두·속사 개조·정밀 조준경·산탄 총열)를 쌓을수록 예광 색이 짙어지고 빛난다
+const TRACER = [
+  { tail: 'rgba(255,240,185,.5)', head: '#ffd35a', glow: null, len: 0 },                                   // 0 기본: 놋쇠빛
+  { tail: 'rgba(255,170,80,.7)',  head: '#ffb347', glow: 'rgba(255,130,40,.38)', len: 8 },                 // 1 주황 예광
+  { tail: 'rgba(120,220,255,.75)', head: '#a8ecff', glow: 'rgba(60,180,255,.46)', len: 16 },               // 2 청색 예광
+  { tail: 'rgba(235,150,255,.8)', head: '#f6c8ff', glow: 'rgba(190,80,255,.55)', len: 24 },                // 3 보라 플라스마
+];
+function bulletTier() { const u = G.up, n = (u.dmg || 0) + (u.rate || 0) + (u.crit || 0) + (u.multi || 0); return n >= 12 ? 3 : n >= 7 ? 2 : n >= 3 ? 1 : 0; }
 const input = { active: false, id: null, ox: 0, oy: 0, cx: 0, cy: 0, jx: 0, jy: 0, keys: {} };
 
 const safeProbe = document.getElementById('safeProbe');
@@ -1395,10 +1407,11 @@ function fireRifle(src, ang, dmg, n, small, tgt) {
   const mz = muzzleOf(src.dir, small ? 0.84 : 1), ox = src.x + mz.dx, oy = src.y + mz.gy;
   const base = tgt ? Math.atan2(tgt.y - oy, tgt.x - ox) : ang;      // 총구에서 표적으로
   const elems = []; if (G.up.burn) elems.push('fire'); if (G.up.cryo) elems.push('ice');
+  const tier = small ? 0 : bulletTier();
   for (let i = 0; i < n; i++) {
     const a = base + (i - (n - 1) / 2) * 0.14 + rand(-0.025, 0.025), cs = Math.cos(a), sn = Math.sin(a);
     G.bullets.push({ x: ox, y: oy, vx: cs * BSPD, vy: sn * BSPD, life: RANGE / BSPD + 0.1, dmg, pierce: p.pierce, crit: p.crit, small, hit: null, h: mz.h, rico: small ? 0 : (G.up.rico || 0),
-      shape: small ? 'pellet' : p.pierce > 0 ? 'needle' : G.up.rico ? 'ball' : 'slug', elem: small || !elems.length ? null : elems[p.shotSeq++ % elems.length] });
+      shape: small ? 'pellet' : p.pierce > 0 ? 'needle' : G.up.rico ? 'ball' : 'slug', elem: small || !elems.length ? null : elems[p.shotSeq++ % elems.length], tier });
   }
   if (src === p) {
     const u = G.up, cs = Math.cos(base), sn = Math.sin(base);
@@ -1571,13 +1584,14 @@ function updateSkills(dt) {
 function updateBullets(dt) {
   const bs = G.bullets, es = G.enemies;
   for (let i = bs.length - 1; i >= 0; i--) {
-    const b = bs[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.age = (b.age || 0) + dt; b.h += (13 - b.h) * Math.min(1, dt * 7);
+    const b = bs[i], sx = b.x, sy = b.y; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.age = (b.age || 0) + dt; b.h += (13 - b.h) * Math.min(1, dt * 7);
     if (b.elem && G.parts.length < 200 && Math.random() < dt * 22) G.parts.push(b.elem === 'fire' ? { x: b.x, y: b.y - b.h, vx: rand(-12, 12), vy: rand(-40, -15), g: 0, life: 0.3, max: 0.3, size: rand(1.5, 2.8), col: 'rgba(255,140,40,.8)' } : { x: b.x, y: b.y - b.h, vx: rand(-10, 10), vy: rand(5, 25), g: 120, life: 0.35, max: 0.35, size: rand(1.2, 2.2), col: 'rgba(210,240,255,.9)' });
     let dead = b.life <= 0;
     if (dead && b.gren) explode(b.x, b.y, b.gren.r, b.gren.dmg, '#ffb347');
     if (!dead) for (const e of es) {
       if (e.dead || (b.hit && b.hit.includes(e))) continue;
-      const rr = e.r + 6, dx = e.x - b.x, dy = e.y - b.y;
+      // 이번 프레임에 지나온 선분(sx,sy → b.x,b.y)에서 적에게 가장 가까운 점으로 잰다 (빨라진 탄이 작은 적을 뚫고 지나가지 않게)
+      const rr = e.r + 6, mx = b.x - sx, my = b.y - sy, mm = mx * mx + my * my, q = mm > 0 ? clamp(((e.x - sx) * mx + (e.y - sy) * my) / mm, 0, 1) : 1, dx = e.x - (sx + mx * q), dy = e.y - (sy + my * q);
       if (dx * dx + dy * dy < rr * rr) {
         if (b.gren) { explode(b.x, b.y, b.gren.r, b.gren.dmg, '#ffb347'); dead = true; break; }
         const crit = Math.random() < b.crit, u = G.up;
