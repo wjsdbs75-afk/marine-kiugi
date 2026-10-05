@@ -395,7 +395,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.25', VERSION_DATE = '2026.10.05', VERSION_NOTE = '탄속 1.5배, 화력 강화에 따라 예광탄 색이 바뀜';   // 게시할 때마다 올린다
+const VERSION = 'v0.26', VERSION_DATE = '2026.10.05', VERSION_NOTE = '위생병: 긴 소총 대신 십자 방패와 짧은 기관단총';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -798,17 +798,42 @@ function varFn(key) {
   if (key.startsWith('hue')) { const dg = +key.slice(3); return d => hslEdit(d, h => h + dg); }
   // 위생병: 파란 장갑은 푸른빛이 도는 흰색으로, 주황 발광부(바이저·어깨등)는 치료의 초록으로
   // (채도가 낮은 총·관절의 어두운 쇠붙이는 건드리지 않아야 얼룩이 생기지 않는다)
-  if (key === 'med') return d => hslMap(d, (h, s, l) => (h > 196 && h < 264 && s > 0.38 && l > 0.12) ? [214, 0.14, Math.min(0.97, 0.5 + l * 0.62)] : ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? [138, 0.85, Math.min(0.62, l)] : null);
+  if (key === 'med') return (d, w, h, name) => { medGunErase(d, w, h, name); hslMap(d, (h, s, l) => (h > 196 && h < 264 && s > 0.38 && l > 0.12) ? [214, 0.14, Math.min(0.97, 0.5 + l * 0.62)] : ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? [138, 0.85, Math.min(0.62, l)] : null); };
   if (key === 'ice') return d => { for (let i = 0; i < d.length; i += 4) { d[i] = 150; d[i + 1] = 215; d[i + 2] = 255; } };
   if (key === 'gem1') return d => hslEdit(d, () => 135);
   if (key === 'gem2') return d => hslEdit(d, () => 285);
   return () => {};
 }
+// 위생병 그림에서 해병의 긴 소총을 지운다. 총구(_muz)에서 가슴까지 이어진 띠 안의 '장갑이 아닌' 픽셀이 대상.
+// 몸 바깥으로 삐져나온 부분은 투명하게, 몸 안(위아래·좌우 모두 장갑에 둘러싸인 곳)은 장갑 색으로 메운다.
+function medGunErase(d, w, h, name) {
+  const mm = /^hero_(.*?)(idle|r(\d))$/.exec(name || ''); if (!mm || !ATLAS.map._muz) return;
+  const pre = mm[1], mz = ATLAS.map._muz[pre], m = ATLAS.map[name]; if (!mz || !m) return;
+  const R = mm[3] != null && ATLAS.map._run ? ATLAS.map._run[pre][+mm[3]] : [0, 0];
+  const Mx = m[4] + mz[0] * HERO_PX, My = h + (R[0] - R[1]) - mz[1] * HERO_PX;
+  const front = pre === 's_', Gx = front ? Mx : m[4] + mz[0] * HERO_PX * 0.08, Gy = front ? My - 34 : h - 0.6 * HERO_PX + (R[0] - R[1]);
+  const rad = front ? 21 : 17, ux = Mx - Gx, uy = My - Gy, ul = Math.hypot(ux, uy) || 1, Ex = Mx + ux / ul * 10, Ey = My + uy / ul * 10;   // 총구 끝을 조금 넘어서까지
+  const vx = Ex - Gx, vy = Ey - Gy, vv = vx * vx + vy * vy || 1;
+  const isArmor = i => { const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, dl = mx - mn; if (d[i + 3] < 8 || dl < 0.02) return false; const s = dl / (1 - Math.abs(2 * l - 1) || 1); let hh = mx === r ? ((g - b) / dl) % 6 : mx === g ? (b - r) / dl + 2 : (r - g) / dl + 4; hh = (hh * 60 + 360) % 360; return hh > 196 && hh < 264 && s > 0.38 && l > 0.12; };
+  const arm = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) arm[i] = isArmor(i * 4) ? 1 : 0;
+  // 몸 안인지: 상하좌우 네 방향 모두 가까이(18px 안)에 장갑이 있어야 한다
+  const near = (x, y, dx, dy) => { for (let k = 1; k <= 18; k++) { const xx = x + dx * k, yy = y + dy * k; if (xx < 0 || yy < 0 || xx >= w || yy >= h) return false; if (arm[yy * w + xx]) return true; } return false; };
+  const x0 = Math.max(0, Math.floor(Math.min(Ex, Gx) - rad - 2)), x1 = Math.min(w - 1, Math.ceil(Math.max(Ex, Gx) + rad + 2)), y0 = Math.max(0, Math.floor(Math.min(Ey, Gy) - rad - 2)), y1 = Math.min(h - 1, Math.ceil(Math.max(Ey, Gy) + rad + 2));
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const k = y * w + x, i = k * 4; if (arm[k] || d[i + 3] < 8) continue;
+    const t = Math.max(0, Math.min(1, ((x - Gx) * vx + (y - Gy) * vy) / vv)), ex = x - (Gx + vx * t), ey = y - (Gy + vy * t);
+    if (ex * ex + ey * ey > rad * rad) continue;
+    const inside = near(x, y, -1, 0) && near(x, y, 1, 0) && near(x, y, 0, -1) && near(x, y, 0, 1);
+    if (!inside) { d[i + 3] = 0; continue; }
+    const l = (Math.max(d[i], d[i + 1], d[i + 2]) + Math.min(d[i], d[i + 1], d[i + 2])) / 510;   // 몸 안: 파란 장갑처럼 칠해 두면 아래 hslMap 이 흰 장갑으로 바꾼다
+    d[i] = 40 + l * 60; d[i + 1] = 70 + l * 90; d[i + 2] = 150 + l * 105;
+  }
+}
 function variant(name, key) {
   const k = name + '|' + key; let v = ATLAS.vars[k]; if (v) return v;
   const m = ATLAS.map[name], cv2 = document.createElement('canvas'); cv2.width = m[2]; cv2.height = m[3];
   const c2 = cv2.getContext('2d', { willReadFrequently: true }); c2.drawImage(aimg(m), m[0], m[1], m[2], m[3], 0, 0, m[2], m[3]);
-  try { const id = c2.getImageData(0, 0, m[2], m[3]); varFn(key)(id.data); c2.putImageData(id, 0, 0); } catch (e) { /* 변형 실패 시 원본 그대로 */ }
+  try { const id = c2.getImageData(0, 0, m[2], m[3]); varFn(key)(id.data, m[2], m[3], name); c2.putImageData(id, 0, 0); } catch (e) { /* 변형 실패 시 원본 그대로 */ }
   return ATLAS.vars[k] = cv2;
 }
 // 발 기준(아래 중앙)으로 그리기. h = 월드 높이
@@ -912,13 +937,53 @@ function medCross(c, x, y, r) {
   const a = r * 0.34, b = r * 0.78; c.fillStyle = '#e8332b';
   c.fillRect(x - a, y - b, 2 * a, 2 * b); c.fillRect(x - b, y - a, 2 * b, 2 * a);
 }
+// 위생병 장비: 왼팔에 붉은 십자 방패, 오른손에 짧은 기관단총. 바라보는 방향(8방향)에 맞춰 원근을 준다
+function medShield(c, x, y, H, wk, face) {
+  const w = H * 0.36 * wk, h = H * 0.5, r = Math.min(w * 0.45, H * 0.07);
+  c.save(); c.translate(x, y);
+  c.lineJoin = 'round'; c.strokeStyle = OUT; c.lineWidth = Math.max(1, H * 0.035);
+  const body = () => { c.beginPath(); c.moveTo(-w / 2, -h * 0.38); c.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2); c.lineTo(w / 2 - r, -h / 2); c.quadraticCurveTo(w / 2, -h / 2, w / 2, -h * 0.38); c.lineTo(w / 2, h * 0.3); c.quadraticCurveTo(w / 2, h / 2, 0, h / 2); c.quadraticCurveTo(-w / 2, h / 2, -w / 2, h * 0.3); c.closePath(); };
+  body(); c.fillStyle = face ? '#8fa3bf' : '#5d6c86'; c.fill(); c.stroke();             // 테두리(쇠)
+  if (w > H * 0.08) {
+    c.save(); c.translate(0, -h * 0.02); c.scale(0.8, 0.86); body(); c.fillStyle = face ? '#eef3fa' : '#7b8aa4'; c.fill(); c.restore();
+    if (face) {
+      c.fillStyle = '#2a3550'; rrect(c, -w * 0.28, -h * 0.36, w * 0.56, h * 0.09, h * 0.04); c.fill();        // 관측창
+      c.fillStyle = 'rgba(160,230,255,.7)'; c.fillRect(-w * 0.2, -h * 0.345, w * 0.18, h * 0.025);
+      const a = Math.min(w, h) * 0.09, b = Math.min(w * 0.3, h * 0.2); c.fillStyle = '#e8332b';                // 붉은 십자
+      c.fillRect(-a, h * 0.06 - b, 2 * a, 2 * b); c.fillRect(-b, h * 0.06 - a, 2 * b, 2 * a);
+    } else { c.fillStyle = '#3a465e'; c.fillRect(-w * 0.12, -h * 0.12, w * 0.24, h * 0.22); }                     // 안쪽 손잡이
+  }
+  c.restore();
+}
+function medSmg(c, x, y, H, ang, len) {
+  const L = H * 0.27 * len, t = H * 0.075;
+  c.save(); c.translate(x, y); c.rotate(ang); if (Math.cos(ang) < 0) c.scale(1, -1);
+  c.lineJoin = 'round'; c.strokeStyle = OUT; c.lineWidth = Math.max(0.8, H * 0.025);
+  c.fillStyle = '#2b3346';
+  poly(c, [-L * 0.1, t * 0.4, -L * 0.02, t * 1.5, L * 0.14, t * 1.5, L * 0.12, t * 0.4]); c.fill(); c.stroke();   // 손잡이
+  poly(c, [L * 0.3, t * 0.45, L * 0.32, t * 1.25, L * 0.42, t * 1.25, L * 0.42, t * 0.45]); c.fill(); c.stroke();  // 탄창
+  c.fillStyle = '#3c475f'; rrect(c, -L * 0.22, -t * 0.55, L * 0.82, t * 1.05, t * 0.35); c.fill(); c.stroke();      // 몸통
+  c.fillStyle = '#20273a'; rrect(c, L * 0.58, -t * 0.28, L * 0.42, t * 0.5, t * 0.2); c.fill(); c.stroke();         // 짧은 총열
+  c.fillStyle = '#5fe08a'; c.fillRect(-L * 0.08, -t * 0.2, L * 0.4, t * 0.22);                                       // 초록 띠
+  c.restore();
+}
 function drawMedic(c, m, s) {
-  drawMarine(c, m.x, m.y, { dir: m.dir, walk: m.walk, idle: m.idle, moving: m.moving, s, v: 'med', lift: m.lift || 0 });
   if (!ATLAS.ready) return;
-  const dir = (m.dir | 0) & 7, side = DIRS[dir][1] ? 1 : -1, H = HERO_H * s;
-  // 등을 보일 때(북쪽)는 등판 가운데, 아니면 앞에서 보이는 어깨에 붙인다
-  const bx = dir === 6 ? 0 : dir === 2 ? -H * 0.15 : side * H * 0.1, by = dir === 6 ? H * 0.6 : H * 0.68;
-  medCross(c, m.x + bx, m.y - (m.lift || 0) - by, 3.1 * s);
+  const dir = (m.dir | 0) & 7, H = HERO_H * s, a = dir * Math.PI / 4, fx = Math.cos(a), fy = Math.sin(a), lx = -fy, ly = fx;   // f: 바라보는 쪽, l: 오른손 쪽
+  const by = m.y - (m.lift || 0), bob = m.moving ? Math.abs(Math.sin(m.walk || 0)) * H * 0.02 : Math.sin(m.idle || 0) * H * 0.008;
+  const shW = Math.max(0.2, Math.abs(lx)), sx = m.x + (fx * 0.17 - lx * 0.1) * H, sy = by + (fy * 0.17 - ly * 0.1) * H * 0.5 - H * 0.46 - bob;
+  const gx = m.x + (fx * 0.2 + lx * 0.14) * H, gy = by + (fy * 0.2 + ly * 0.14) * H * 0.5 - H * 0.5 - bob;
+  const gAng = Math.atan2(fy * 0.5, fx), gLen = 0.45 + 0.55 * Math.abs(fx);
+  const shieldBack = fy < -0.2, gunBack = fy * 0.2 + ly * 0.14 < -0.02;
+  if (shieldBack) medShield(c, sx, sy, H, shW, false);
+  if (gunBack) medSmg(c, gx, gy, H, gAng, gLen);
+  drawMarine(c, m.x, m.y, { dir: m.dir, walk: m.walk, idle: m.idle, moving: m.moving, s, v: 'med', lift: m.lift || 0 });
+  if (!shieldBack) medShield(c, sx, sy, H, shW, fy > -0.2 && Math.abs(lx) > 0.45);
+  if (!gunBack) medSmg(c, gx, gy, H, gAng, gLen);
+  if (shieldBack || Math.abs(lx) < 0.45) {   // 방패 면이 안 보일 때는 어깨 완장으로 위생병임을 보여 준다
+    const side = DIRS[dir][1] ? 1 : -1, bx = dir === 6 ? 0 : side * H * 0.1, bh = dir === 6 ? H * 0.6 : H * 0.68;
+    medCross(c, m.x + bx, by - bh, 3.1 * s);
+  }
 }
 // 치료 광선: 위생병 손에서 해병 가슴까지 흔들리는 초록 빛줄기
 function drawHealBeam(c, m, p, T) {
@@ -1840,7 +1905,7 @@ function renderLobby(c) {
   drawShip(c, -50, -24 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
   const n = save.meta.squad || 0;
   for (let i = 0; i < n; i++) drawMarine(c, 72 + i * 22, 12 + i * 20, { dir: 1, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
-  drawMedic(c, { x: -14, y: 30, dir: 1, idle: T * 3 + 1 }, 1.45);
+  drawMedic(c, { x: -36, y: 32, dir: 1, idle: T * 3 + 1 }, 1.45);
   drawMarine(c, 26, 46, { dir: 1, idle: T * 3, s: 1.9 });
   c.restore();
 }
