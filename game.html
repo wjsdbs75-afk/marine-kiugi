@@ -89,7 +89,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 #energyNote { color: #fff; font-size: .78em; min-height: 1.2em; }
 .idle-btn b { font-weight: 400; font-variant-numeric: tabular-nums; }
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .6em; }
-#pageHome { pointer-events: none; padding-bottom: .5em; }
+#pageHome { pointer-events: none; padding-bottom: 1.3em; }   /* 가운데 전투 탭이 위로 솟아 있어 그만큼 띄운다 */
 #pageHome > * { pointer-events: auto; }
 .logo { font-size: 1em; white-space: nowrap; margin-top: .1em; display: flex; flex-direction: column; align-items: center; font-family: var(--font-display); font-weight: 400; line-height: 1; transform: rotate(-3deg); pointer-events: none; }
 .logo .l1 { font-size: 4.4em; color: var(--hazard); }
@@ -128,13 +128,51 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .gd-info span:empty { display: none; }
 .gd-btns { display: flex; gap: .4em; }
 .gd-btns .btn { flex: 1; padding: .38em .3em; display: inline-flex; align-items: center; justify-content: center; gap: .25em; white-space: nowrap; }
-#tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: .3em; margin: 0 -.8em; padding: .35em .4em calc(.45em + var(--sb)); background: var(--ink); }
+#tabs { display: grid; grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr; align-items: end; gap: .3em; margin: 0 -.8em; padding: .35em .4em calc(.45em + var(--sb)); background: var(--ink); }
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; padding: .1em 0 .22em; background: var(--steel); color: var(--fg-dim); border: .12em solid #000; border-radius: .5em; font-family: var(--font-display); font-weight: 400; font-size: .8em; touch-action: manipulation; }
 .tab { transition: transform .13s ease-out, background .13s; position: relative; }
 .tab canvas, .tab svg { width: 3.3em; height: 3.3em; margin-bottom: -.12em; transition: width .13s, height .13s; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .45)); }
 .tab:active { transform: scale(.94); }
 .tab[aria-selected="true"] { background: var(--hazard); color: var(--ink); border-color: var(--ink); transform: translateY(-.5em) scale(1.1); box-shadow: 0 .3em 0 #000; z-index: 1; }
 .tab[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
+/* 가운데 '전투' 탭: 늘 노랗게 솟아 있는 큰 버튼. 고르면 흰 테두리가 둘러진다 */
+.tab.main { background: linear-gradient(#ffd851, #f2a414); color: var(--ink); border-color: var(--ink); font-size: .95em; transform: translateY(-.75em); box-shadow: 0 .3em 0 #000, inset 0 .12em 0 rgba(255, 255, 255, .55); border-radius: .75em; padding-top: .05em; }
+.tab.main canvas { width: 3.9em; height: 3.9em; }
+.tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); transform: translateY(-.95em) scale(1.08); box-shadow: 0 .3em 0 #000, 0 0 0 .16em #fff; }
+.tab.main[aria-selected="true"] canvas { width: 4.3em; height: 4.3em; }
+.tab.main:active { transform: translateY(-.75em) scale(.95); }
+/* ---- 상점 */
+.shop-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .6em; margin: 0 -.3em; padding: .1em .3em .7em; -webkit-overflow-scrolling: touch; }
+.shop-scroll > * { flex: none; }
+.crate-card { position: relative; display: grid; grid-template-columns: 6.4em minmax(0, 1fr); align-items: center; gap: .5em; padding: .55em .6em .6em .4em; color: var(--ink); background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .08) 0 .5em, transparent .5em 1em), linear-gradient(135deg, #ffd650, #f0a012); border: .15em solid var(--ink); border-radius: .7em; box-shadow: 0 .28em 0 var(--ink), inset 0 .12em 0 rgba(255, 255, 255, .5); overflow: hidden; }
+.crate-art { width: 6.4em; height: 6.4em; filter: drop-shadow(0 .2em 0 rgba(0, 0, 0, .35)); }
+.crate-info { display: flex; flex-direction: column; gap: .3em; min-width: 0; }
+.crate-title { font-family: var(--font-display); font-weight: 400; font-size: 1.4em; line-height: 1.05; }
+.crate-sub { font-size: .72em; color: #4a3300; text-wrap: balance; }
+.crate-btns { display: flex; gap: .35em; }
+.crate-btns .btn { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: .05em; padding: .3em .2em; font-size: 1em; }
+.crate-btns small { font-family: var(--font-body); font-weight: 800; font-size: .62em; white-space: nowrap; }
+.btn.dark { background: var(--ink); color: var(--fg); box-shadow: 0 .22em 0 #5a3d00, inset 0 .1em 0 rgba(255, 255, 255, .14); }
+.btn.dark.best { background: var(--steel-3); }
+.price { display: inline-flex; align-items: center; gap: .15em; font-size: 1.05em; font-variant-numeric: tabular-nums; }
+.price .gem-dot { width: 1.05em; height: 1.05em; }
+#shopOut { flex: none; max-height: 8.6em; }
+#shopOutBox { display: flex; flex-direction: column; gap: .35em; }
+#shopOutBox[hidden] { display: none; }
+.shop-bar { margin: .2em 1.6em 0; padding: .28em 0; text-align: center; font-family: var(--font-display); font-weight: 400; font-size: 1.08em; color: var(--fg); background: var(--ink); border-radius: .45em; box-shadow: 0 .18em 0 #000; }
+.btn.daily { align-self: stretch; }
+.gem-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45em; }
+.gem-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: .15em; padding: .35em .3em .35em; margin: 0; font: inherit; color: var(--ink); background: linear-gradient(#f3f6fc, #c8d3e8); border: .13em solid var(--ink); border-radius: .55em; box-shadow: 0 .2em 0 var(--ink); cursor: pointer; touch-action: manipulation; overflow: hidden; }
+.gem-card:active { transform: translateY(.14em); box-shadow: 0 .06em 0 var(--ink); }
+.gem-card:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
+.gem-card .amt { font-family: var(--font-display); font-weight: 400; font-size: 1em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gem-pile { position: relative; width: 100%; height: 3.3em; overflow: hidden; }
+.gem-pile i { position: absolute; background: var(--ico-gem) center / contain no-repeat; }
+.gem-card .first { position: absolute; left: .15em; bottom: 2.85em; z-index: 30; font-family: var(--font-display); font-size: .6em; padding: .1em .45em; color: var(--ink); background: var(--hazard); border: .12em solid var(--ink); border-radius: .3em; transform: rotate(-5deg); white-space: nowrap; }
+.gem-card .bonus { position: absolute; right: .2em; top: 2.75em; z-index: 30; font-family: var(--font-display); font-size: .58em; padding: .05em .35em; color: #fff; background: var(--danger); border: .1em solid var(--ink); border-radius: .3em; }
+.gem-card .krw { align-self: stretch; text-align: center; font-family: var(--font-display); font-size: .92em; padding: .14em 0; background: var(--hazard); border: .12em solid var(--ink); border-radius: .4em; font-variant-numeric: tabular-nums; }
+/* ---- 분대 */
+#squadCv { width: 100%; height: auto; aspect-ratio: 480 / 230; background: radial-gradient(ellipse at 50% 80%, #2f4a35, #18261d 70%); border: .13em solid var(--ink); border-radius: .5em; flex: none; }
 #ver { font-size: .62em; color: #fff; opacity: .85; text-shadow: 0 .1em 0 var(--ink), 0 -.1em 0 var(--ink), .1em 0 0 var(--ink), -.1em 0 0 var(--ink); position: absolute; top: calc(.15em + var(--st)); right: .7em; z-index: 6; pointer-events: none; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #btnSet[aria-pressed="true"] { background: var(--hazard); color: var(--ink); }
 .rng { width: 9.5em; accent-color: var(--hazard); touch-action: pan-x; }
@@ -275,20 +313,42 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
         <div class="rows" id="metaRows"></div>
       </div>
 
-      <div id="pageShop" class="page pane" hidden>
+      <div id="pageShop" class="page pane shop" hidden>
         <div class="pane-head"><h2>상점</h2></div>
-        <div class="row"><canvas class="ico" data-ico="crate" width="96" height="96"></canvas><div class="row-body"><b>보급 요청</b><span>무작위 장비 1개</span></div><button id="btnPull1" class="btn gold sm" type="button"><span class="gem-dot"></span><span id="pull1Cost">30</span></button></div>
-        <div class="row"><canvas class="ico" data-ico="crate" width="96" height="96"></canvas><div class="row-body"><b>보급 요청 ×10</b><span>무작위 장비 10개 · 10% 할인</span></div><button id="btnPull10" class="btn gold sm" type="button"><span class="gem-dot"></span><span id="pull10Cost">270</span></button></div>
-        <div class="row"><i class="bolt big" aria-hidden="true"></i><div class="row-body"><b>에너지 충전</b><span>에너지 +25 (최대 50)</span></div><button id="btnEnergyBuy" class="btn gold sm" type="button"><span class="gem-dot"></span><span>40</span></button></div>
-        <p class="note">보급은 보석으로 요청합니다. 높은 스테이지를 깰수록 좋은 등급이 잘 나오고, 등급이 높을수록 부가 옵션이 더 붙습니다.</p>
-        <div class="pane-head sub"><b>획득 결과</b><button id="btnShopClear" class="btn sm" type="button">지우기</button></div>
-        <p class="note" id="shopSum"></p>
-        <div class="inv" id="shopOut" data-empty="아직 받은 보급이 없습니다. 받은 장비가 여기에 계속 쌓입니다."></div>
+        <div class="shop-scroll" id="shopScroll">
+          <section class="crate-card" aria-labelledby="crateTitle">
+            <canvas class="crate-art" data-ico="crate" width="96" height="96" aria-hidden="true"></canvas>
+            <div class="crate-info">
+              <b class="crate-title" id="crateTitle">장비 보급</b>
+              <p class="crate-sub">무작위 장비가 든 보급 상자. 높은 스테이지를 깰수록 좋은 등급이 잘 나와요.</p>
+              <div class="crate-btns">
+                <button id="btnPull1" class="btn dark" type="button"><small>1회 보급</small><span class="price"><span class="gem-dot"></span><span id="pull1Cost">30</span></span></button>
+                <button id="btnPull10" class="btn dark best" type="button"><small>10회 · 10% 할인</small><span class="price"><span class="gem-dot"></span><span id="pull10Cost">270</span></span></button>
+              </div>
+            </div>
+          </section>
+          <div id="shopOutBox" hidden>
+            <div class="pane-head sub"><b>획득 결과</b><button id="btnShopClear" class="btn sm" type="button">지우기</button></div>
+            <p class="note" id="shopSum"></p>
+            <div class="inv" id="shopOut"></div>
+          </div>
+          <h3 class="shop-bar" id="gemSection">보석 상점</h3>
+          <button id="btnDaily" class="btn gold sm daily" type="button"></button>
+          <div class="gem-grid" id="gemGrid"></div>
+          <p class="note">지금은 테스트 버전이라 결제 없이 바로 지급됩니다. 가격은 예정가이고, 실제 결제는 스토어 연동 뒤에 붙습니다.</p>
+          <h3 class="shop-bar">보급품</h3>
+          <div class="row"><i class="bolt big" aria-hidden="true"></i><div class="row-body"><b>에너지 충전</b><span>에너지 +25 (최대 50)</span></div><button id="btnEnergyBuy" class="btn gold sm" type="button"><span class="gem-dot"></span><span>40</span></button></div>
+        </div>
+      </div>
+
+      <div id="pageSquad" class="page pane" hidden>
+        <div class="pane-head"><h2>분대</h2><span class="chip mini" id="sqCount">분대원 0 / 2</span></div>
+        <canvas id="squadCv" width="480" height="230" aria-label="분대 편성"></canvas>
+        <div class="rows" id="squadRows"></div>
       </div>
 
       <div id="pageSet" class="page pane" hidden>
         <div class="pane-head"><h2>설정</h2></div>
-        <div class="row"><div class="row-body"><b>보석 충전</b><span>보급 요청에 쓰는 유료 재화</span></div><button id="btnGemShop" class="btn gold sm" type="button">열기</button></div>
         <div class="row"><div class="row-body"><b>소리 전체</b><span>효과음과 음악</span></div><button id="btnSetSound" class="btn sm" type="button">켜짐</button></div>
         <div class="row"><div class="row-body"><label for="rngSfx"><b>효과음 음량</b></label><span id="sfxVal">50</span></div><input id="rngSfx" class="rng" type="range" min="0" max="100" step="5" value="50"></div>
         <div class="row"><div class="row-body"><b>총소리</b><span>누르면 바로 들어 볼 수 있어요</span></div><div class="seg" id="shotSeg" role="group" aria-label="총소리 고르기"><button class="btn pill" type="button" data-shot="1" aria-pressed="true" aria-label="총소리 1">1</button><button class="btn pill" type="button" data-shot="2" aria-pressed="false" aria-label="총소리 2">2</button><button class="btn pill" type="button" data-shot="3" aria-pressed="false" aria-label="총소리 3">3</button></div></div>
@@ -360,15 +420,6 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       </div>
     </div>
 
-    <div id="gemShop" class="overlay" hidden>
-      <div class="panel sheet">
-        <div class="sheet-head"><h2>보석 충전</h2><div class="chip"><span class="gem-dot"></span><b id="gemShopGems">0</b></div></div>
-        <p class="note">지금은 테스트 버전이라 결제 없이 바로 지급됩니다. 가격은 예정가이고, 실제 결제는 스토어 연동 뒤에 붙습니다.</p>
-        <div class="rows" id="gemRows"></div>
-        <button id="btnGemClose" class="btn gold" type="button">닫기</button>
-      </div>
-    </div>
-
     <div id="toast" role="status"></div>
   </div>
 </div>
@@ -395,7 +446,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.27', VERSION_DATE = '2026.10.05', VERSION_NOTE = '의무병: 레벨업에서 골라야 합류, 총 위치 바로잡음';   // 게시할 때마다 올린다
+const VERSION = 'v0.28', VERSION_DATE = '2026.10.05', VERSION_NOTE = '보석 상점을 상점 탭으로, 하단 메뉴 5칸(분대 추가, 전투 가운데)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -490,8 +541,8 @@ const METAS = [
   { id: 'def',   name: '장갑 보강',   desc: '받는 피해 -0.7',    max: 10, base: 80,   g: 1.4 },
   { id: 'gold',  name: '전리품 수집', desc: '코인 획득 +10%',    max: 15, base: 70,   g: 1.35 },
   { id: 'xp',    name: '실전 경험',   desc: '경험치 획득 +5%',   max: 10, base: 70,   g: 1.35 },
-  { id: 'squad', name: '분대 편성',   desc: '시작 분대원 +1',    max: 2,  base: 1200, g: 4 },
-  { id: 'sqd',   name: '분대 훈련',   desc: '분대원 피해 +10%',  max: 10, base: 120,  g: 1.3 },
+  { id: 'squad', name: '분대 편성',   desc: '시작 분대원 +1',    max: 2,  base: 1200, g: 4,   grp: 'squad' },   // 분대 탭에 보인다
+  { id: 'sqd',   name: '분대 훈련',   desc: '분대원 피해 +10%',  max: 10, base: 120,  g: 1.3, grp: 'squad' },
 ];
 const metaCost = (m, lv) => Math.round(m.base * Math.pow(m.g, lv));
 
@@ -556,7 +607,16 @@ function gearBonus() {
   return b;
 }
 // 보석(유료 재화) 상품. 지금은 결제 연동이 없어 누르면 바로 지급된다
-const GEM_PACKS = [{ gems: 100, price: '₩1,200' }, { gems: 550, price: '₩5,900' }, { gems: 1200, price: '₩12,000' }, { gems: 3300, price: '₩33,000' }];
+// 보석 상품 6종. 기본 시세는 ₩1,000당 보석 50개, 큰 상품일수록 보너스가 붙는다. 상품마다 첫 구매는 2배
+const GEM_PACKS = [
+  { id: 'g1', gems: 60,   price: '₩1,200',  bonus: 0 },
+  { id: 'g2', gems: 330,  price: '₩5,900',  bonus: 12 },
+  { id: 'g3', gems: 720,  price: '₩12,000', bonus: 20 },
+  { id: 'g4', gems: 1600, price: '₩25,000', bonus: 28 },
+  { id: 'g5', gems: 3400, price: '₩49,000', bonus: 39 },
+  { id: 'g6', gems: 7500, price: '₩99,000', bonus: 52 },
+];
+const GEM_PILE = [3, 5, 7, 10, 13, 17];       // 상품 그림의 보석 개수
 // 에너지: 출격 1회 5, 10분에 1 충전, 최대 50
 const ENERGY_MAX = 50, ENERGY_COST = 5, ENERGY_MS = 600000, ENERGY_REFILL = 25, ENERGY_REFILL_GEMS = 40;
 function tickEnergy() {
@@ -586,10 +646,11 @@ const BARKS = {
 
 // ---------- 저장 (이 브라우저에만 저장됨)
 const SAVE_KEY = 'marine-kiugi-v1';
-const save = { coins: 0, best: 0, meta: {}, idleFrom: Date.now(), mute: false, auto: false, sel: 1, inv: [], eq: [0, 0, 0, 0, 0, 0], nid: 1, gems: 60, daily: '', energy: 50, energyAt: Date.now(), music: true, sfxVol: 50, musicVol: 30 };
+const save = { coins: 0, best: 0, meta: {}, idleFrom: Date.now(), mute: false, auto: false, sel: 1, inv: [], eq: [0, 0, 0, 0, 0, 0], nid: 1, gems: 60, daily: '', gemFirst: {}, energy: 50, energyAt: Date.now(), music: true, sfxVol: 50, musicVol: 30 };
 function loadSave() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && typeof s === 'object') Object.assign(save, s); } catch (e) { /* 저장소 사용 불가 */ }
   if (!save.meta || typeof save.meta !== 'object') save.meta = {};
+  if (!save.gemFirst || typeof save.gemFirst !== 'object') save.gemFirst = {};
   if (!Array.isArray(save.inv)) save.inv = [];
   if (!Array.isArray(save.eq) || save.eq.length !== SLOTS.length) save.eq = [0, 0, 0, 0, 0, 0];
   save.nid = Math.max(save.nid | 0, 1, ...save.inv.map(it => it.id + 1));
@@ -1986,7 +2047,7 @@ function refreshLobby() {
 }
 function toLobby() {
   appState = 'lobby'; G = null; input.active = false;
-  for (const id of ['hud', 'levelup', 'pause', 'result', 'gemShop']) el(id).hidden = true;
+  for (const id of ['hud', 'levelup', 'pause', 'result']) el(id).hidden = true;
   el('lobby').hidden = false; setTab('Home'); refreshLobby();
 }
 function startRun(stage) {
@@ -1998,34 +2059,64 @@ function startRun(stage) {
 }
 
 // ---------- 병영 (영구 강화)
+function metaRow(m, redraw) {
+  const lv = save.meta[m.id] || 0, maxed = lv >= m.max, cost = metaCost(m, lv);
+  const row = mk('div', 'row'); row.append(iconCanvas(m.id, 'ico'));
+  const body = mk('div', 'row-body'); body.append(mk('b', '', `${m.name}  Lv.${lv}`), mk('span', '', `${m.desc} (최대 ${m.max})`)); row.append(body);
+  const b = mk('button', 'btn gold sm'); b.type = 'button';
+  if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
+  else { b.append(mk('span', 'coin-dot'), document.createTextNode(fmt(cost))); b.disabled = save.coins < cost; b.setAttribute('aria-label', `${m.name} 강화, ${cost} 코인`); }
+  b.addEventListener('click', () => {
+    if (save.coins < cost) { SFX.deny(); return; }
+    save.coins -= cost; save.meta[m.id] = lv + 1; writeSave(); SFX.buy(); redraw();
+  });
+  row.append(b); return row;
+}
 function refreshBarracks() {
   refreshWallet();
   const box = el('metaRows'); const top = box.scrollTop; box.textContent = '';
-  for (const m of METAS) {
-    const lv = save.meta[m.id] || 0, maxed = lv >= m.max, cost = metaCost(m, lv);
-    const row = mk('div', 'row'); row.append(iconCanvas(m.id, 'ico'));
-    const body = mk('div', 'row-body'); body.append(mk('b', '', `${m.name}  Lv.${lv}`), mk('span', '', `${m.desc} (최대 ${m.max})`)); row.append(body);
-    const b = mk('button', 'btn gold sm'); b.type = 'button';
-    if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
-    else { b.append(mk('span', 'coin-dot'), document.createTextNode(fmt(cost))); b.disabled = save.coins < cost; b.setAttribute('aria-label', `${m.name} 강화, ${cost} 코인`); }
-    b.addEventListener('click', () => {
-      if (save.coins < cost) { SFX.deny(); return; }
-      save.coins -= cost; save.meta[m.id] = lv + 1; writeSave(); SFX.buy(); refreshBarracks();
-    });
-    row.append(b); box.append(row);
+  for (const m of METAS) if (!m.grp) box.append(metaRow(m, refreshBarracks));
+  box.scrollTop = top;
+}
+
+// ---------- 분대: 출격 때 함께 내려오는 분대원과 의무병
+const SQUAD_MAX = METAS.find(m => m.id === 'squad').max;
+function refreshSquad() {
+  refreshWallet();
+  const n = save.meta.squad || 0; setTxt('sqCount', `분대원 ${n} / ${SQUAD_MAX}`);
+  const cv3 = el('squadCv'), c = cv3.getContext('2d'); c.clearRect(0, 0, cv3.width, cv3.height);
+  if (ATLAS.ready) {
+    c.save(); c.translate(240, 196); c.scale(2.3, 2.3);
+    c.fillStyle = 'rgba(0,0,0,.18)'; ell(c, 0, 4, 98, 14); c.fill();
+    for (let i = 0; i < SQUAD_MAX; i++) {
+      const x = i ? 58 : -58, y = -10, own = i < n;
+      c.save(); if (!own) c.globalAlpha = 0.28;
+      drawMarine(c, x, y, { dir: i ? 3 : 1, idle: 1 + i, s: 0.9, v: 'sq' + i }); c.restore();
+      if (!own) { c.fillStyle = '#ffffff'; c.font = '700 7px sans-serif'; c.textAlign = 'center'; c.fillText('빈 자리', x, y + 11); }
+    }
+    drawMarine(c, 0, 0, { dir: 2, idle: 0, s: 1.15 });
+    c.restore();
   }
+  const box = el('squadRows'), top = box.scrollTop; box.textContent = '';
+  // 의무병 안내 (전투 중 레벨업에서만 합류)
+  const med = mk('div', 'row'), mc = mk('canvas', 'ico'); mc.width = mc.height = 96; mc.setAttribute('aria-hidden', 'true');
+  if (ATLAS.ready) { const g2 = mc.getContext('2d'); g2.save(); g2.translate(48, 90); g2.scale(1.85, 1.85); drawMedic(g2, { x: 0, y: 0, dir: 2, idle: 0 }, 0.95); g2.restore(); }
+  const mb = mk('div', 'row-body'); mb.append(mk('b', '', '의무병'), mk('span', '', '전투 중 레벨업에서 \'의무병\'을 고르면 합류해 따라다니며 치료해요 (최대 3단계)'));
+  med.append(mc, mb); box.append(med);
+  for (const m of METAS) if (m.grp === 'squad') box.append(metaRow(m, refreshSquad));
+  const tip = mk('p', 'note', '전투 중에도 레벨업에서 \'신병 합류\'를 고르면 분대원이 늘어나요'); box.append(tip);
   box.scrollTop = top;
 }
 
 // ---------- 하단 탭
-const TABS = [['Shop', '상점', 'crate'], ['Gear', '장비', 'i_hp'], ['Home', '전투', 'i_crit'], ['Up', '강화', 'i_squad']];
-const PAGES = ['Shop', 'Gear', 'Home', 'Up', 'Set'];          // 설정은 위쪽 톱니 버튼으로 연다
+const TABS = [['Shop', '상점', 'crate'], ['Gear', '장비', 'i_hp'], ['Home', '전투', 'i_crit'], ['Squad', '분대', 'i_squad'], ['Up', '강화', 'i_dmg']];   // 전투가 가운데
+const PAGES = ['Shop', 'Gear', 'Home', 'Squad', 'Up', 'Set'];          // 설정은 위쪽 톱니 버튼으로 연다
 const COG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.300l1.8-1.8"/><circle cx="12" cy="12" r="6.6"/></svg>';
 let curTab = 'Home', resetArmed = false;
 function buildTabs() {
   const nav = el('tabs'); nav.textContent = '';
   for (const [id, label, ico] of TABS) {
-    const b = mk('button', 'tab'); b.type = 'button'; b.id = 'tab' + id;
+    const b = mk('button', 'tab' + (id === 'Home' ? ' main' : '')); b.type = 'button'; b.id = 'tab' + id;
     if (ico) { const ic = iconCanvas(ico), g2 = ic.getContext('2d'); g2.clearRect(0, 0, 96, 96); sprC(g2, ATLAS.map[ico] ? ico : 'i_' + (ICON_ALIAS[ico] || ico), 48, 48, 95); b.append(ic); }   // 탭 아이콘은 칸을 꽉 채워 그린다
     else b.insertAdjacentHTML('beforeend', COG);
     b.append(mk('span', '', label));
@@ -2039,7 +2130,7 @@ function setTab(id) {
   curTab = id;
   for (const t of PAGES) { el('page' + t).hidden = t !== id; const b = document.getElementById('tab' + t); if (b) b.setAttribute('aria-selected', String(t === id)); }
   el('btnSet').setAttribute('aria-pressed', String(id === 'Set'));
-  if (id === 'Gear') refreshGear(); else if (id === 'Up') refreshBarracks(); else if (id === 'Shop') refreshShop(); else if (id === 'Set') refreshSet(); else refreshLobby();
+  if (id === 'Gear') refreshGear(); else if (id === 'Up') refreshBarracks(); else if (id === 'Squad') refreshSquad(); else if (id === 'Shop') refreshShop(); else if (id === 'Set') refreshSet(); else refreshLobby();
 }
 
 // ---------- 장비
@@ -2092,11 +2183,38 @@ function refreshShop() {
   for (const e of pullLog) { const t = gearTile(e.it, 0, true); if (e.fresh) t.classList.add('fresh'); out.append(t); }
   const cnt = [0, 0, 0, 0, 0]; for (const e of pullLog) cnt[e.it.r]++;
   setTxt('shopSum', pullLog.length ? `총 ${pullLog.length}개 · ` + RARITY.map((r, i) => `${r.name} ${cnt[i]}`).reverse().join(' · ') : '');
-  el('btnShopClear').hidden = !pullLog.length;
+  el('shopOutBox').hidden = !pullLog.length;
+  refreshGemGrid();
 }
+// 보석 상점: 오늘의 무료 보석 + 상품 6종 (첫 구매 2배)
+function refreshGemGrid() {
+  const claimed = save.daily === today(), db = el('btnDaily');
+  db.textContent = claimed ? '오늘의 무료 보석은 받았어요 · 내일 다시' : `오늘의 무료 보석 ${DAILY_GEMS}개 받기`; db.disabled = claimed;
+  const grid = el('gemGrid'); grid.textContent = '';
+  GEM_PACKS.forEach((pk, k) => {
+    const first = !save.gemFirst[pk.id], b = mk('button', 'gem-card'); b.type = 'button';
+    b.setAttribute('aria-label', `보석 ${pk.gems}개 ${pk.price}${first ? ', 첫 구매 2배' : ''}`);
+    b.append(mk('b', 'amt', `보석 ×${fmt(pk.gems)}`));
+    const pile = mk('div', 'gem-pile'), n = GEM_PILE[k], sz = 0.95 + k * 0.04;
+    for (let row = 0, left = n, w = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2); left > 0; row++, w--) {
+      const cnt = Math.min(left, Math.max(1, w)); left -= cnt;
+      for (let i = 0; i < cnt; i++) { const g = mk('i'); g.style.width = g.style.height = sz + 'em'; g.style.left = `calc(50% + ${(i - (cnt - 1) / 2) * sz * 0.66 - sz / 2}em)`; g.style.bottom = row * sz * 0.42 + 'em'; g.style.zIndex = 10 - row; pile.append(g); }
+    }
+    b.append(pile);
+    if (pk.bonus) b.append(mk('span', 'bonus', `+${pk.bonus}%`));
+    if (first) b.append(mk('span', 'first', '첫 구매 2배!'));
+    b.append(mk('span', 'krw', pk.price));
+    b.addEventListener('click', () => {
+      SFX.resume(); const got = pk.gems * (save.gemFirst[pk.id] ? 1 : 2); save.gemFirst[pk.id] = 1; save.gems += got; writeSave(); SFX.buy();
+      toast(`보석 +${fmt(got)}${got > pk.gems ? ' (첫 구매 2배)' : ''}`); refreshShop();
+    });
+    grid.append(b);
+  });
+}
+function showGemShop() { setTab('Shop'); const g = el('gemSection'); if (g && g.scrollIntoView) g.scrollIntoView({ block: 'start' }); }
 function pull(n) {
   const c = pullCost(n);
-  if (save.gems < c) { SFX.deny(); toast('보석이 부족합니다. 설정에서 충전할 수 있어요'); return; }
+  if (save.gems < c) { SFX.deny(); toast('보석이 부족합니다. 아래 보석 상점에서 충전할 수 있어요'); showGemShop(); return; }
   if (save.inv.length + n > INV_CAP) { SFX.deny(); toast('보관함이 가득 찼습니다. 장비를 분해하세요'); return; }
   save.gems -= c; for (const e of pullLog) e.fresh = false;
   const got = []; for (let i = 0; i < n; i++) got.push({ it: Object.assign({}, makeGear(save.best + 1)), fresh: true });
@@ -2111,19 +2229,6 @@ function refreshSet() {
   for (const b of el('shotSeg').children) b.setAttribute('aria-pressed', String(+b.dataset.shot === save.shot));
   setTxt('verInfo', `${VERSION} (${VERSION_DATE}) · ${VERSION_NOTE}`);
 }
-function refreshGemShop() {
-  refreshWallet(); setTxt('gemShopGems', fmt(save.gems));
-  const box = el('gemRows'); box.textContent = '';
-  const add = (title, sub, label, fn, disabled) => {
-    const row = mk('div', 'row'), body = mk('div', 'row-body'); body.append(mk('b', '', title), mk('span', '', sub));
-    const b = mk('button', 'btn gold sm', label); b.type = 'button'; b.disabled = !!disabled; b.addEventListener('click', () => { SFX.resume(); fn(); });
-    row.append(mk('span', 'gem-dot'), body, b); box.append(row);
-  };
-  const claimed = save.daily === today();
-  add(`일일 무료 보석 ${DAILY_GEMS}개`, claimed ? '오늘은 이미 받았습니다' : '하루에 한 번 받을 수 있습니다', claimed ? '완료' : '받기', () => { save.daily = today(); save.gems += DAILY_GEMS; writeSave(); SFX.coin(); toast(`보석 +${DAILY_GEMS}`); refreshGemShop(); }, claimed);
-  for (const p of GEM_PACKS) add(`보석 ${fmt(p.gems)}개`, `예정가 ${p.price} · 테스트 지급`, '받기', () => { save.gems += p.gems; writeSave(); SFX.buy(); toast(`보석 +${fmt(p.gems)}`); refreshGemShop(); });
-}
-
 // ---------- 레벨업
 function openLevelUp() {
   G.state = 'levelup'; G.choices = rollChoices(); G.autoPickT = 2.6; input.active = false; input.jx = input.jy = 0;
@@ -2238,10 +2343,9 @@ function bindUi() {
   tap('btnAutoEq', () => { for (let i = 0; i < SLOTS.length; i++) { let best = null; for (const it of save.inv) if (it.s === i && (!best || it.r * 100 + it.lv > best.r * 100 + best.lv)) best = it; save.eq[i] = best ? best.id : 0; } writeSave(); SFX.buy(); refreshGear(); });
   tap('btnPull1', () => pull(1)); tap('btnPull10', () => pull(10));
   tap('btnShopClear', () => { pullLog.length = 0; SFX.click(); refreshShop(); });
-  tap('btnGemShop', () => { SFX.click(); refreshGemShop(); el('gemShop').hidden = false; });
-  tap('curGems', () => { SFX.click(); refreshGemShop(); el('gemShop').hidden = false; });      // 상단 보석 캡슐 = 보석 충전
+  tap('curGems', () => { SFX.tab(); showGemShop(); });                                         // 상단 보석 캡슐 = 상점의 보석 상점
+  tap('btnDaily', () => { if (save.daily === today()) return; save.daily = today(); save.gems += DAILY_GEMS; writeSave(); SFX.coin(); toast(`보석 +${DAILY_GEMS}`); refreshShop(); });
   tap('energyChip', () => { SFX.tab(); setTab('Shop'); });                                      // 상단 에너지 캡슐 = 상점(에너지 충전)
-  tap('btnGemClose', () => { SFX.click(); el('gemShop').hidden = true; if (curTab === 'Shop') refreshShop(); });
   tap('btnSetSound', () => { save.mute = !save.mute; writeSave(); SFX.music(); SFX.click(); refreshSet(); refreshLobby(); });
   tap('btnReset', () => {
     if (!resetArmed) { resetArmed = true; setTxt('btnReset', '정말 지우기'); setTimeout(() => { resetArmed = false; setTxt('btnReset', '초기화'); }, 3000); SFX.deny(); return; }
@@ -2319,7 +2423,6 @@ if (!save.idleFrom || save.idleFrom > Date.now()) save.idleFrom = Date.now();
 // ---------- 앱(래퍼) 연동: 브라우저에는 MK_NATIVE 가 없어 그냥 지나간다
 // 안드로이드 뒤로 가기: 창 닫기 → 일시정지 → 전투 탭. 더 닫을 것이 없으면 false
 function onBack() {
-  if (!el('gemShop').hidden) { el('gemShop').hidden = true; return true; }
   if (appState === 'run' && G) { if (G.state === 'play') openPause(); else if (G.state === 'paused') closePause(); return true; }
   if (curTab !== 'Home') { setTab('Home'); return true; }
   return false;
