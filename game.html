@@ -44,6 +44,7 @@ h1, h2, p { margin: 0; }
 .btn.sq svg { width: 1.15em; height: 1.15em; }
 .btn.pill { font-size: .9em; padding: .32em .8em; min-width: 4.1em; background: var(--steel); }
 .btn.pill[aria-pressed="true"] { background: var(--hazard); color: var(--ink); }
+.btn.pill.locked { opacity: .55; filter: grayscale(.8); text-decoration: line-through; }
 .seg { display: flex; gap: .4em; flex: none; }
 .seg .btn.pill { min-width: 2.7em; padding: .4em 0; font-size: 1em; }
 .panel { background: var(--steel); border: .15em solid var(--ink); border-radius: .7em; box-shadow: 0 .28em 0 var(--ink), inset 0 .1em 0 rgba(255, 255, 255, .1); }
@@ -446,7 +447,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.30', VERSION_DATE = '2026.10.05', VERSION_NOTE = '의무병 전용 그림';   // 게시할 때마다 올린다
+const VERSION = 'v0.31', VERSION_DATE = '2026.10.05', VERSION_NOTE = '반동은 상체만·다리 살짝 가늘게, 오토는 깬 스테이지에서만';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -890,19 +891,28 @@ function muzzleOf(dir, s) {
   return { dx: (d[1] ? -1 : 1) * mz[0] * H, gy, h: mz[1] * H + gy };
 }
 const RUN_MIX = 0.3;         // 한 장을 보여 주는 시간의 끝 30% 동안 다음 장과 섞어 넘긴다
-const MIX_W = 264, MIX_H = 232, MIX_AX = 132, MIX_AY = 223;
-let mixCv = null, mixG = null;
-// 달리기 두 장을 t 비율로 섞어(발 기준 정렬) 그린다. K = 그림 px → 월드 배율
-function drawRunMix(c, nA, nB, t, oa, ob, x, y, K, flip, alpha, v) {
-  if (!mixCv) { mixCv = document.createElement('canvas'); mixCv.width = MIX_W; mixCv.height = MIX_H; mixG = mixCv.getContext('2d'); }
-  const g = mixG; g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, MIX_W, MIX_H); g.globalCompositeOperation = 'lighter';
-  const put = (n, a, off) => {
-    const m = ATLAS.map[n], dx = MIX_AX - m[4] + off[0], dy = MIX_AY - m[3] + off[1]; g.globalAlpha = a;
-    if (v) g.drawImage(variant(n, v), dx, dy); else g.drawImage(aimg(m), m[0], m[1], m[2], m[3], dx, dy, m[2], m[3]);
+// 몸통을 한 장의 그림 칸(BODY)에 먼저 그린 뒤 가로 띠로 잘라 옮겨 그린다.
+// 그래야 반동은 상체에만 주고(다리는 땅에 붙어 있음), 다리는 아래로 갈수록 살짝 가늘게 할 수 있다.
+const BODY_W = 300, BODY_H = 270, BODY_AX = 150, BODY_AY = 262;   // 그림 칸 크기와 발 기준점 (그림 px)
+const HIP_PX = 96, HIP_BAND = 26, LEG_THIN = 0.08;                // 엉덩이 높이(발에서), 반동이 사라지는 띠, 발끝에서 가늘어지는 비율
+let bodyCv = null, bodyG = null;
+function bodyPut(n, v, a, offY) {
+  const m = ATLAS.map[n], dx = BODY_AX - m[4], dy = BODY_AY - m[3] + offY; bodyG.globalAlpha = a;
+  if (v) bodyG.drawImage(variant(n, v), dx, dy); else bodyG.drawImage(aimg(m), m[0], m[1], m[2], m[3], dx, dy, m[2], m[3]);
+}
+function bodyBlit(c, x, y, K, flip, sy, rx, ry, alpha) {
+  const sm = k => k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k), top = BODY_AY - HIP_PX - HIP_BAND;
+  c.save(); if (alpha != null) c.globalAlpha *= alpha;
+  const put = (y0, y1, ox, oy, sx) => {
+    c.save(); c.translate(x + ox, y + oy); if (flip) c.scale(-1, 1); c.scale(sx, sy);
+    c.drawImage(bodyCv, 0, y0, BODY_W, y1 - y0 + 1, -BODY_AX * K, (y0 - BODY_AY) * K, BODY_W * K, (y1 - y0 + 1) * K); c.restore();
   };
-  put(nA, 1 - t, oa); put(nB, t, ob);
-  c.save(); c.translate(x, y); if (flip) c.scale(-1, 1); if (alpha != null) c.globalAlpha *= alpha;
-  c.drawImage(mixCv, -MIX_AX * K, -MIX_AY * K, MIX_W * K, MIX_H * K); c.restore();
+  put(0, top, rx, ry, 1);                                        // 상체: 반동 그대로
+  for (let y0 = top; y0 < BODY_AY; y0 += 5) {                    // 엉덩이~발: 반동이 줄어들고 아래로 갈수록 가늘어진다
+    const up = BODY_AY - (y0 + 2.5), kr = sm((up - (HIP_PX - HIP_BAND)) / (2 * HIP_BAND)), kt = sm(1 - up / HIP_PX);
+    put(y0, Math.min(BODY_AY, y0 + 5), rx * kr, ry * kr, 1 - LEG_THIN * kt);
+  }
+  c.restore();
 }
 function drawMarine(c, x, y, o) {
   const s = o.s || 1, dir = (o.dir | 0) & 7, d = DIRS[dir], H = HERO_H * s, lift = o.lift || 0, K = H / HERO_PX, fx = d[1] ? -1 : 1;
@@ -926,13 +936,19 @@ function drawMarine(c, x, y, o) {
     ty = lerp(R[i][0], R[j][0], t);
     const nA = 'hero_' + d[0] + 'r' + i, nB = 'hero_' + d[0] + 'r' + j, oa = [0, R[i][1]], ob = [0, R[j][1]];
     o._body = () => {
-      if (t > 0.02 && t < 0.98) drawRunMix(c, nA, nB, t, oa, ob, bx, by, K, d[1], o.alpha, v);
-      else { const n = t < 0.5 ? nA : nB, off = t < 0.5 ? oa : ob, m = ATLAS.map[n]; spr(c, n, bx, by + off[1] * K, H * m[3] / HERO_PX, { flip: d[1], alpha: o.alpha, v }); }
+      bodyG.globalCompositeOperation = 'source-over'; bodyG.globalAlpha = 1; bodyG.clearRect(0, 0, BODY_W, BODY_H);
+      if (t > 0.02 && t < 0.98) { bodyG.globalCompositeOperation = 'lighter'; bodyPut(nA, v, 1 - t, oa[1]); bodyPut(nB, v, t, ob[1]); bodyG.globalCompositeOperation = 'source-over'; }
+      else bodyPut(t < 0.5 ? nA : nB, v, 1, (t < 0.5 ? oa : ob)[1]);
+      bodyBlit(c, x, y - lift, K, d[1], 1, bx - x, by - (y - lift), o.alpha);
     };
   } else {
-    const n = 'hero_' + d[0] + 'idle', m = ATLAS.map[n], sy = 1 + Math.sin(o.idle || 0) * 0.014;
-    o._body = () => spr(c, n, bx, by, H * m[3] / HERO_PX, { flip: d[1], sy, alpha: o.alpha, v });
+    const n = 'hero_' + d[0] + 'idle', sy = 1 + Math.sin(o.idle || 0) * 0.014;
+    o._body = () => {
+      bodyG.globalCompositeOperation = 'source-over'; bodyG.globalAlpha = 1; bodyG.clearRect(0, 0, BODY_W, BODY_H); bodyPut(n, v, 1, 0);
+      bodyBlit(c, x, y - lift, K, d[1], sy, bx - x, by - (y - lift), o.alpha);
+    };
   }
+  if (!bodyCv) { bodyCv = document.createElement('canvas'); bodyCv.width = BODY_W; bodyCv.height = BODY_H; bodyG = bodyCv.getContext('2d'); }
   const mz = muzzleOf(dir, s), flash = fire > 0.3, mx = bx + mz.dx + fx * tx * K, my = by + ty * K + mz.gy - mz.h;
   // 총구 화염: 쏘는 방향으로 길게 뻗는 불꽃 + 소염기 옆으로 새는 짧은 불꽃. 두세 프레임만 크게 번쩍이고 곧바로 줄어든다
   const drawFlash = () => {
@@ -1432,7 +1448,12 @@ function autoMove() {
     if (d < near) near = d;
     if (d < R) { const w = (R - d) / R, k = w * w * (e.boss ? 4 : e.r / 10); vx += dx / d * k; vy += dy / d * k; }
   }
-  for (const b of G.ebullets) { const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 70) { const w = (70 - d) / 70; vx += -b.vy / 110 * w * 1.6 + dx / d * w; vy += b.vx / 110 * w * 1.6 + dy / d * w; } }
+  // 적 탄: 사람처럼 완벽하진 않게. 탄마다 알아챌지 한 번만 정하고(약 45%), 가까이 와서야 비킨다
+  for (const b of G.ebullets) {
+    if (b.seen == null) b.seen = Math.random() < 0.45;
+    if (!b.seen) continue;
+    const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 48) { const w = (48 - d) / 48; vx += -b.vy / 110 * w * 1.2 + dx / d * w * 0.8; vy += b.vx / 110 * w * 1.2 + dy / d * w * 0.8; }
+  }
   // 줍기: 주변이 한산하면 경험치/아이템 쪽으로
   let best = null, bd = 300 * 300;
   for (const g of G.picks) { const d = (g.x - p.x) ** 2 + (g.y - p.y) ** 2; const w = g.kind === 'chest' ? 0.25 : (g.kind === 'heart' && p.hp < p.maxHp * 0.6) ? 0.3 : 1; if (d * w < bd) { bd = d * w; best = g; } }
@@ -1440,15 +1461,18 @@ function autoMove() {
   if (best) { const dx = best.x - p.x, dy = best.y - p.y, d = Math.hypot(dx, dy) || 1, w = near > 85 ? 0.75 : 0.2; vx += dx / d * w; vy += dy / d * w; }
   const m = Math.hypot(vx, vy);
   const tx = m > 0.12 ? vx / m : 0, ty = m > 0.12 ? vy / m : 0;
-  G.autoDir.x = lerp(G.autoDir.x, tx, 0.18); G.autoDir.y = lerp(G.autoDir.y, ty, 0.18);
+  G.autoDir.x = lerp(G.autoDir.x, tx, 0.11); G.autoDir.y = lerp(G.autoDir.y, ty, 0.11);   // 방향을 천천히 튼다 (반응이 사람보다 살짝 느림)
   return G.autoDir;
 }
+// 오토는 한 번 깬 스테이지에서만 움직인다. 처음 깨는 스테이지는 직접 조작해야 한다 (켜 둔 설정은 그대로 기억)
+const autoLocked = () => !!G && G.stage > save.best;
+const autoOn = () => save.auto && !autoLocked();
 function moveVec() {
   const k = input.keys; let x = 0, y = 0;
   if (k.ArrowLeft || k.KeyA) x--; if (k.ArrowRight || k.KeyD) x++; if (k.ArrowUp || k.KeyW) y--; if (k.ArrowDown || k.KeyS) y++;
   if (x || y) { const m = Math.hypot(x, y); return { x: x / m, y: y / m }; }
-  if (input.active) { const m = Math.hypot(input.jx, input.jy); if (m > 0.14) return { x: input.jx, y: input.jy }; if (!save.auto) return { x: 0, y: 0 }; }
-  if (save.auto) return autoMove();
+  if (input.active) { const m = Math.hypot(input.jx, input.jy); if (m > 0.14) return { x: input.jx, y: input.jy }; if (!autoOn()) return { x: 0, y: 0 }; }
+  if (autoOn()) return autoMove();
   return { x: 0, y: 0 };
 }
 
@@ -1526,7 +1550,7 @@ function updatePlay(dt) {
   } else { if (p.fireT < 0) p.fireT = 0; if (p.moving) p.aim = angLerp(p.aim, Math.atan2(mv.y, mv.x), 1 - Math.pow(0.002, dt)); }
 
   // 방치 전투: 스팀팩 자동 사용
-  if (save.auto && !stim && p.stimLock <= 0 && p.hp > p.maxHp * 0.55) {
+  if (autoOn() && !stim && p.stimLock <= 0 && p.hp > p.maxHp * 0.55) {
     let c = 0; for (const e of g.enemies) { const d = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (e.boss && d < 280 * 280) c += 6; else if (d < 170 * 170) c++; }
     if (c >= 6) useStim();
   }
@@ -2160,7 +2184,7 @@ function renderLevelUp() {
   const box = el('luCards'); box.textContent = '';
   const best = G.choices.reduce((a, u) => (u.pr > a.pr ? u : a), G.choices[0]);
   G.choices.forEach((u, i) => {
-    const lv = G.up[u.id] || 0, b = mk('button', 'card' + (save.auto && u === best ? ' pickme' : '')); b.type = 'button';
+    const lv = G.up[u.id] || 0, b = mk('button', 'card' + (autoOn() && u === best ? ' pickme' : '')); b.type = 'button';
     b.append(iconCanvas(u.id, 'ico'));
     const body = mk('div', 'card-body'), name = mk('div', 'card-name', u.name);
     if (u.max < 99) { if (lv === 0 && u.skill) name.append(mk('span', 'tag', 'NEW')); }
@@ -2237,8 +2261,9 @@ function updateHud() {
   if (cache.stimOn !== on) { cache.stimOn = on; el('btnStim').classList.toggle('on', on); }
   if (cache.stimNo !== no) { cache.stimNo = no; el('btnStim').classList.toggle('no', no); }
   if (on) { setStyle('btnStim', '--p', (p.stimT / p.stimDur).toFixed(2)); setTxt('stimCost', p.stimT.toFixed(1) + '초'); } else setTxt('stimCost', 'HP -' + cost);
-  if (cache.auto !== save.auto) { cache.auto = save.auto; el('btnAuto').setAttribute('aria-pressed', String(save.auto)); }
-  if (g.time > 4 && cache.hint !== 0) { cache.hint = 0; el('hint').style.opacity = 0; } else if (g.time <= 4 && cache.hint !== 1) { cache.hint = 1; setTxt('hint', save.auto ? 'AUTO 전투 중 · 드래그하면 직접 조작' : (finePointer ? 'WASD 이동 · Space 스팀팩' : '화면을 드래그해서 이동')); }
+  const aState = autoLocked() ? 'lock' : String(save.auto);
+  if (cache.auto !== aState) { cache.auto = aState; const b = el('btnAuto'); b.setAttribute('aria-pressed', String(aState === 'true')); b.classList.toggle('locked', aState === 'lock'); b.setAttribute('aria-label', aState === 'lock' ? 'AUTO 잠김: 처음 깨는 스테이지는 직접 조작' : 'AUTO'); }
+  if (g.time > 4 && cache.hint !== 0) { cache.hint = 0; el('hint').style.opacity = 0; } else if (g.time <= 4 && cache.hint !== 1) { cache.hint = 1; setTxt('hint', autoLocked() ? '처음 깨는 스테이지는 직접 조작! (AUTO 잠김)' : save.auto ? 'AUTO 전투 중 · 드래그하면 직접 조작' : (finePointer ? 'WASD 이동 · Space 스팀팩' : '화면을 드래그해서 이동')); }
 }
 
 // ---------- 이벤트 연결
@@ -2278,7 +2303,7 @@ function bindUi() {
   tap('btnResHome', () => { SFX.click(); toLobby(); });
   tap('btnResNext', () => { SFX.click(); const clear = G.result === 'clear', s = clear ? Math.min(STAGES.length, G.stage + 1) : G.stage; save.sel = s; writeSave(); if (!trySortie(s)) toLobby(); });
   press('btnStim', () => useStim());
-  press('btnAuto', () => { save.auto = !save.auto; writeSave(); SFX.click(); if (G) floatText(G.p.x, G.p.y - 56, save.auto ? 'AUTO 켜짐' : 'AUTO 꺼짐', '#ffd24a', 13, 1); });
+  press('btnAuto', () => { if (autoLocked()) { SFX.deny(); toast('처음 깨는 스테이지는 직접 조작해야 해요'); return; } save.auto = !save.auto; writeSave(); SFX.click(); if (G) floatText(G.p.x, G.p.y - 56, save.auto ? 'AUTO 켜짐' : 'AUTO 꺼짐', '#ffd24a', 13, 1); });
   press('btnSpeed', () => { simSteps = simSteps === 1 ? 2 : 1; setTxt('btnSpeed', 'x' + simSteps); el('btnSpeed').setAttribute('aria-pressed', String(simSteps > 1)); SFX.click(); });
   tap('btnReroll', () => { if (!G || G.state !== 'levelup' || G.reroll <= 0) return; G.reroll--; G.choices = rollChoices(); G.autoPickT = 2.6; SFX.click(); renderLevelUp(); });
 
@@ -2314,7 +2339,7 @@ function bindUi() {
   });
   window.addEventListener('keyup', e => { input.keys[e.code] = false; });
   window.addEventListener('blur', () => { input.keys = {}; input.active = false; });
-  document.addEventListener('visibilitychange', () => { SFX.music(); if (document.hidden && G && G.state === 'play' && !save.auto) openPause(); });
+  document.addEventListener('visibilitychange', () => { SFX.music(); if (document.hidden && G && G.state === 'play' && !autoOn()) openPause(); });
   document.addEventListener('pointerdown', () => SFX.resume(), { passive: true });
   window.addEventListener('resize', resize);
   setTimeout(resize, 400); setTimeout(resize, 1500);       // 앱에서 시스템 바가 숨겨진 뒤의 여백을 다시 잰다
@@ -2326,12 +2351,12 @@ function frame(now) {
   const raw = Math.min(0.05, (now - lastNow) / 1000 || 0.016); lastNow = now; T += raw;
   if (appState === 'run' && G) {
     for (let i = 0; i < simSteps && appState === 'run' && G; i++) stepRun(raw);
-    if (G && G.state === 'result' && save.auto) {
-      G.autoNextT -= raw; const clear = G.result === 'clear', last = G.stage >= STAGES.length;
-      setTxt('resAuto', `AUTO: ${Math.max(1, Math.ceil(G.autoNextT))}초 뒤 ${clear && !last ? '다음 스테이지로' : '다시 출격'}`);
-      if (G.autoNextT <= 0) { if (clear && last) { if (!trySortie(G.stage)) toLobby(); } else el('btnResNext').click(); }
+    if (G && G.state === 'result' && save.auto && G.stage <= save.best) {
+      G.autoNextT -= raw; const clear = G.result === 'clear', next = clear && G.stage < STAGES.length && G.stage + 1 <= save.best;   // 다음 스테이지도 깬 적 있을 때만 넘어간다
+      setTxt('resAuto', `AUTO: ${Math.max(1, Math.ceil(G.autoNextT))}초 뒤 ${next ? '다음 스테이지로' : '다시 출격'}` + (clear && !next && G.stage < STAGES.length ? ' · 새 스테이지는 직접 조작' : ''));
+      if (G.autoNextT <= 0) { if (next) el('btnResNext').click(); else { save.sel = G.stage; writeSave(); if (!trySortie(G.stage)) toLobby(); } }
     } else if (G && G.state === 'result') setTxt('resAuto', '');
-    if (G && G.state === 'levelup' && save.auto) { G.autoPickT -= raw; setTxt('luSub', `AUTO: ${Math.max(1, Math.ceil(G.autoPickT))}초 뒤 자동 선택`); if (G.autoPickT <= 0) autoPick(); }
+    if (G && G.state === 'levelup' && autoOn()) { G.autoPickT -= raw; setTxt('luSub', `AUTO: ${Math.max(1, Math.ceil(G.autoPickT))}초 뒤 자동 선택`); if (G.autoPickT <= 0) autoPick(); }
   }
   render();
   if (appState === 'run' && G) updateHud();
