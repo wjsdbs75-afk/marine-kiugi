@@ -89,6 +89,7 @@ public class MainActivity extends Activity {
         setUpWindow();
         buildViews();
         setContentView(root);
+        hideNavigationBar();   // 화면(DecorView)이 생긴 뒤에 불러야 한다. 그 전에 부르면 안드로이드 11 이상에서 앱이 죽는다
         if (Build.VERSION.SDK_INT >= 33) {
             Api33.registerBack(this, this::handleBack);
         }
@@ -116,12 +117,19 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 30) {
             w.setDecorFitsSystemWindows(false);
         }
-        hideNavigationBar();
     }
 
     /** 내비게이션 바를 숨긴다. 다이얼로그·키보드·다른 앱에 다녀오면 시스템이 다시 보이게 할 수 있어 돌아올 때마다 부른다. */
-    @SuppressWarnings("deprecation")
     private void hideNavigationBar() {
+        try {
+            hideNavigationBarUnchecked();
+        } catch (RuntimeException e) {
+            // 바를 못 숨겨도 게임은 그대로 뜨게 한다
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void hideNavigationBarUnchecked() {
         Window w = getWindow();
         if (Build.VERSION.SDK_INT >= 30) {
             Api30.hideNavigationBar(w);
@@ -579,7 +587,7 @@ public class MainActivity extends Activity {
 
         /** 숨긴 내비게이션 바는 쓸어 올릴 때만 잠깐 화면 위에 겹쳐 나온다 (게임 배치는 움직이지 않는다). */
         static void hideNavigationBar(Window w) {
-            WindowInsetsController c = w.getInsetsController();
+            WindowInsetsController c = w.getDecorView().getWindowInsetsController();
             if (c == null) {
                 return;
             }
