@@ -484,7 +484,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.33', VERSION_DATE = '2026.10.05', VERSION_NOTE = '방치 보상을 작전 보고 창으로 (코인·보석·장비)';   // 게시할 때마다 올린다
+const VERSION = 'v0.34', VERSION_DATE = '2026.10.05', VERSION_NOTE = '유탄·도탄·과충전탄 뾰족하게, 일시정지 때 음악 줄임, 빠른 연사 총소리 끊김 고침';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -721,7 +721,7 @@ const SFX = (() => {
   // 1번은 한 발짜리라 쏠 때마다 겹쳐 울린다. 2·3번은 연사음이라 한 줄기만 울리고, 앞 소리가 어느 정도 나간 뒤에야 다시 시작한다.
   const SHOTS = [[SHOT_B64, 0.42, 0, 0.06], [SHOT2_B64, 0.08, 0.2, 0.025], [SHOT3_B64, 0.07, 0.34, 0.025]];
   const shotBufs = SHOTS.map(() => null), shotLead = SHOTS.map(() => 0), shotTried = SHOTS.map(() => false);
-  let shotVoice = null, shotAt = -9, shotWant = -1;
+  let shotVoices = [], shotLast = -9, shotEst = 0.4, shotWant = -1;
   const shotIdx = () => clamp((save.shot | 0) - 1, 0, SHOTS.length - 1);
   function loadShot(i = shotIdx()) {
     if (shotTried[i] || !ac) return; shotTried[i] = true;
@@ -737,22 +737,28 @@ const SFX = (() => {
       }, () => {});
     } catch (e) { /* 합성음으로 대체 */ }
   }
+  // 긴 총소리(2·3번)는 예전에 0.2초 안에 다시 쏘면 건너뛰고 앞 소리를 끊어서, 빠른 연사에서 소리가 씹혔다.
+  // 이제는 매 발 재생하되 연사 간격에 맞춰 길이를 줄이고(꼬리는 부드럽게 줄임), 최대 3겹까지만 겹친다
   function playShot(i, force) {
     const buf = shotBufs[i]; if (!buf) return false;
-    const vol = SHOTS[i][1], gap = SHOTS[i][2], wob = SHOTS[i][3], t = ac.currentTime;
-    if (gap) {
-      if (!force && t - shotAt < gap) return true;
-      if (shotVoice) { const v = shotVoice; try { v.g.gain.setValueAtTime(v.g.gain.value, t); v.g.gain.linearRampToValueAtTime(0, t + 0.05); v.s.stop(t + 0.06); } catch (e) { /* 이미 끝난 소리 */ } }
-      shotAt = t;
-    }
-    const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = buf; s.playbackRate.value = 1 - wob + Math.random() * wob * 2; g.gain.value = vol;
-    s.connect(g); g.connect(master); s.start(t, shotLead[i]);
-    if (gap) { const v = shotVoice = { s, g }; s.onended = () => { if (shotVoice === v) shotVoice = null; }; }
+    const vol = SHOTS[i][1], long = SHOTS[i][2] > 0, wob = SHOTS[i][3], t = ac.currentTime;
+    const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = buf; s.playbackRate.value = 1 - wob + Math.random() * wob * 2;
+    s.connect(g); g.connect(master);
+    if (!long) { g.gain.value = vol; s.start(t, shotLead[i]); return true; }
+    const dt = t - shotLast; shotLast = t; if (!force && dt < 1) shotEst = lerp(shotEst, dt, 0.35); else if (force) shotEst = 0.4;
+    const L = clamp(shotEst * 1.7, 0.1, buf.duration - shotLead[i]), v0 = vol * (shotEst < 0.16 ? 0.8 : 1);
+    g.gain.setValueAtTime(v0, t); g.gain.setValueAtTime(v0, t + L * 0.55); g.gain.linearRampToValueAtTime(0.0001, t + L);
+    s.start(t, shotLead[i]); s.stop(t + L + 0.02);
+    const v = { s, g }; shotVoices.push(v); s.onended = () => { shotVoices = shotVoices.filter(x => x !== v); };
+    while (shotVoices.length > 3) { const o = shotVoices.shift(); try { o.g.gain.cancelScheduledValues(t); o.g.gain.setValueAtTime(o.g.gain.value, t); o.g.gain.linearRampToValueAtTime(0.0001, t + 0.03); o.s.stop(t + 0.04); } catch (e) { /* 이미 끝난 소리 */ } }
     return true;
   }
   const volOf = (v, d) => clamp((Number.isFinite(v) ? v : d) / 100, 0, 1);
   const wantMusic = () => !save.mute && volOf(save.musicVol, 30) > 0 && !document.hidden;
-  function volume() { if (master) master.gain.value = volOf(save.sfxVol, 50); if (bgm) bgm.volume = volOf(save.musicVol, 30); if (bgmGain) bgmGain.gain.value = wantMusic() ? volOf(save.musicVol, 30) : 0; }
+  let ducked = false;                    // 일시정지 중에는 음악을 30%로 줄인다
+  const musicVol = () => volOf(save.musicVol, 30) * (ducked ? 0.3 : 1);
+  function volume() { if (master) master.gain.value = volOf(save.sfxVol, 50); if (bgm) bgm.volume = musicVol(); if (bgmGain) bgmGain.gain.value = wantMusic() ? musicVol() : 0; }
+  function duck(on) { if (ducked === !!on) return; ducked = !!on; volume(); }
   function bgmViaWebAudio() {            // <audio> 재생이 막힌 환경용
     if (bgmFallback || !ac) return; bgmFallback = true;
     try { ac.decodeAudioData(b64bytes(BGM_B64).buffer, buf => { bgmGain = ac.createGain(); bgmGain.gain.value = wantMusic() ? volOf(save.musicVol, 30) : 0; bgmGain.connect(ac.destination); bgmNode = ac.createBufferSource(); bgmNode.buffer = buf; bgmNode.loop = true; bgmNode.connect(bgmGain); bgmNode.start(); }, () => {}); } catch (e) { /* 음악 없이 진행 */ }
@@ -789,7 +795,7 @@ const SFX = (() => {
   }
   const thr = (k, ms) => { const n = performance.now(); if (last[k] && n - last[k] < ms) return false; last[k] = n; return true; };
   return {
-    resume, music, volume,
+    resume, music, volume, duck,
     tab() { tone(520, 820, 0.07, 'triangle', 0.16); tone(1040, 1240, 0.06, 'triangle', 0.1, 0.05); },
     debug: () => ({ shot: !!shotBufs[shotIdx()], shots: shotBufs.map(b => b ? +b.duration.toFixed(2) : 0), lead: shotLead.map(v => +v.toFixed(3)), bgm: bgm ? { paused: bgm.paused, t: +bgm.currentTime.toFixed(2), dur: +(bgm.duration || 0).toFixed(1), err: bgm.error ? bgm.error.code : 0 } : null, fallback: bgmFallback, webAudio: !!bgmGain }),
     // 총성: 짧은 화약 폭발 노이즈(고음에서 저음으로 닫힘) + 저음 반동
@@ -1105,15 +1111,25 @@ function drawPick(c, p, t) {
 const CRIT_SPARKS = [[-0.8, 0.7], [-0.32, 1.15], [0.08, 0.85], [0.46, 1.25], [0.9, 0.6]];   // 치명타 불티: [각도, 길이]
 const BULLET_K = 0.42;     // 탄환 그림 배율 (판정 크기와는 별개)
 function drawBullet(c, b) {
-  if (b.gren) { sprC(c, 'i_grenade', b.x, b.y - b.h, 9.5, { rot: b.life * 16 }); return; }
+  if (b.gren) {                      // 유탄: 끝이 뾰족한 40mm 탄. 놋쇠 탄피 + 올리브색 탄두 + 노란 띠, 뒤로 옅은 연기
+    const ga = Math.atan2(b.vy, b.vx), age = b.age || 0;
+    c.save(); c.translate(b.x, b.y - b.h); c.rotate(ga); c.lineJoin = 'round';
+    for (let i = 1; i <= 3; i++) { const r = 1.6 + i * 0.9 + Math.min(1, age * 4) * i * 0.4; c.fillStyle = `rgba(225,225,215,${0.32 - i * 0.08})`; ell(c, -4 - i * 3.6, Math.sin(age * 30 + i) * 0.8, r, r); c.fill(); }
+    c.strokeStyle = OUT; c.lineWidth = 0.9;
+    rrect(c, -5.2, -2.4, 4.6, 4.8, 1); c.fillStyle = '#d8b04c'; c.fill(); c.stroke();                 // 탄피
+    poly(c, [-0.8, -2.5, 2.4, -2.5, 6.6, 0, 2.4, 2.5, -0.8, 2.5]); c.fillStyle = '#6d7a52'; c.fill(); c.stroke();   // 뾰족한 탄두
+    c.fillStyle = '#ffd23a'; c.fillRect(0.1, -2.35, 0.9, 4.7);                                            // 노란 띠
+    c.fillStyle = 'rgba(255,255,255,.55)'; poly(c, [-0.4, -1.8, 2.2, -1.8, 4.6, -0.5, -0.4, -0.9]); c.fill();
+    c.restore(); return;
+  }
   const a = Math.atan2(b.vy, b.vx), t = T * 30 + b.x * 0.3, k = b.big ? 0.6 : BULLET_K;
   c.save(); c.translate(b.x, b.y - (b.h || 20)); c.rotate(a); c.scale(k, k); c.lineJoin = 'round'; c.lineCap = 'round';
-  if (b.big) {                       // 과충전탄: 고리가 도는 플라스마 구체
-    const g = c.createRadialGradient(0, 0, 0, 0, 0, 9); g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#ffc24a'); g.addColorStop(1, 'rgba(255,90,30,0)');
-    c.fillStyle = 'rgba(255,120,40,.35)'; poly(c, [-30, 0, -4, -5, -4, 5]); c.fill();
-    c.fillStyle = g; ell(c, 0, 0, 9, 9); c.fill();
-    c.strokeStyle = '#fff3c4'; c.lineWidth = 1.4; c.beginPath(); c.ellipse(0, 0, 3.2, 8, 0, t * 0.4, t * 0.4 + 4.2); c.stroke();
-    c.beginPath(); c.ellipse(-5, 0, 2.2, 5.5, 0, -t * 0.5, -t * 0.5 + 3.6); c.stroke();
+  if (b.big) {                       // 과충전탄: 앞이 뾰족한 플라스마 창. 뒤로 길게 타오르고 둘레에 고리가 돈다
+    c.fillStyle = 'rgba(255,120,40,.3)'; poly(c, [-38, 0, -6, -6.5, 6, 0, -6, 6.5]); c.fill();
+    c.fillStyle = 'rgba(255,170,60,.75)'; poly(c, [-22, 0, -4, -4.2, 13, 0, -4, 4.2]); c.fill();
+    c.fillStyle = '#ffe9b0'; poly(c, [-12, 0, -2, -2.2, 16, 0, -2, 2.2]); c.fill();
+    c.fillStyle = '#ffffff'; poly(c, [-5, 0, 0, -1, 12, 0, 0, 1]); c.fill();
+    c.strokeStyle = 'rgba(255,243,196,.9)'; c.lineWidth = 1.3; c.beginPath(); c.ellipse(-3, 0, 2, 6.5, 0, t * 0.4, t * 0.4 + 4.2); c.stroke();
   } else if (b.shape === 'laser') {  // 드론: 가는 광선
     c.strokeStyle = 'rgba(80,220,255,.45)'; c.lineWidth = 4.5; c.beginPath(); c.moveTo(-20, 0); c.lineTo(0, 0); c.stroke();
     c.strokeStyle = '#eaffff'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-20, 0); c.lineTo(1, 0); c.stroke();
@@ -1141,10 +1157,9 @@ function drawBullet(c, b) {
     c.strokeStyle = OUT; c.lineWidth = 1.3;
     if (b.shape === 'needle') {      // 관통탄: 가늘고 긴 철갑 탄심
       poly(c, [-6, 0, -3, -1.35, 5, -1.2, 10.5, 0, 5, 1.2, -3, 1.35]); c.fillStyle = b.elem === 'fire' ? '#ffb070' : b.tier ? TRACER[b.tier].head : '#f1f6ff'; c.fill(); c.stroke();
-    } else if (b.shape === 'ball') { // 도탄: 회전하는 쇠구슬
-      c.fillStyle = 'rgba(210,220,235,.35)'; ell(c, -5, 0, 3.2, 3.2); c.fill(); ell(c, -9, 0, 2.4, 2.4); c.fill();
-      ell(c, 0, 0, 3.8, 3.8); c.fillStyle = b.elem === 'fire' ? '#ffb070' : b.tier ? TRACER[b.tier].head : '#c9d3e4'; c.fill(); c.stroke();
-      c.strokeStyle = '#ffffff'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 2.2, t, t + 1.7); c.stroke();
+    } else if (b.shape === 'ball') { // 도탄: 끝이 뾰족한 강철 탄두. 튈 때마다 몸통 반짝임이 돈다
+      poly(c, [-4.5, -1.9, 3, -1.9, 8.5, 0, 3, 1.9, -4.5, 1.9]); c.fillStyle = b.elem === 'fire' ? '#ffb070' : b.tier ? TRACER[b.tier].head : '#c9d3e4'; c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.85)'; c.fillRect(-3 + ((t * 2) % 7), -1.3, 1.4, 2.6);
     } else {                         // 기본: 작은 탄두
       rrect(c, -3, -1.6, 8.5, 3.2, 1.6); c.fillStyle = b.elem === 'fire' ? '#ff9a3c' : TRACER[b.tier || 0].head; c.fill(); c.stroke();
       c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(-1.2, -0.95, 4.4, 0.75);
@@ -2073,6 +2088,7 @@ function refreshLobby() {
   refreshIdle(); refreshEnergy();
 }
 function toLobby() {
+  SFX.duck(false);
   appState = 'lobby'; G = null; input.active = false;
   for (const id of ['hud', 'levelup', 'pause', 'result']) el(id).hidden = true;
   el('lobby').hidden = false; setTab('Home'); refreshLobby();
@@ -2298,9 +2314,9 @@ function openPause() {
   statRows(el('pauseStats'), [['진행', `STAGE ${G.stage} · ${G.round} / ${ROUNDS} 라운드`], ['계급', `Lv.${G.level} ${rankOf(G.level)}`], ['처치', fmt(G.kills)], ['이번 출격 코인', fmt(G.coins)]]);
   const box = el('pauseUps'); box.textContent = '';
   for (const u of UPS) { const lv = G.up[u.id]; if (!lv) continue; const c = mk('span', 'chip mini'); c.append(iconCanvas(u.id), document.createTextNode(`${u.name} ${lv}`)); box.append(c); }
-  el('pause').hidden = false;
+  el('pause').hidden = false; SFX.duck(true);
 }
-function closePause() { if (G && G.state === 'paused') { G.state = 'play'; el('pause').hidden = true; } }
+function closePause() { if (G && G.state === 'paused') { G.state = 'play'; el('pause').hidden = true; SFX.duck(false); } }
 function showResult() {
   const g = G, clear = g.result === 'clear', last = g.stage >= STAGES.length;
   const bonus = clear ? Math.round(80 * g.stage * g.p.coinMul) : 0, total = g.coins + bonus;
