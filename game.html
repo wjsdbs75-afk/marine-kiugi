@@ -172,6 +172,25 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .gem-card .first { position: absolute; left: .15em; bottom: 2.85em; z-index: 30; font-family: var(--font-display); font-size: .6em; padding: .1em .45em; color: var(--ink); background: var(--hazard); border: .12em solid var(--ink); border-radius: .3em; transform: rotate(-5deg); white-space: nowrap; }
 .gem-card .bonus { position: absolute; right: .2em; top: 2.75em; z-index: 30; font-family: var(--font-display); font-size: .58em; padding: .05em .35em; color: #fff; background: var(--danger); border: .1em solid var(--ink); border-radius: .3em; }
 .gem-card .krw { align-self: stretch; text-align: center; font-family: var(--font-display); font-size: .92em; padding: .14em 0; background: var(--hazard); border: .12em solid var(--ink); border-radius: .4em; font-variant-numeric: tabular-nums; }
+/* ---- 부재 중 작전 보고 */
+.report { gap: .55em; }
+.rep-stamp { position: absolute; right: .5em; top: .7em; z-index: 2; font-family: var(--font-display); font-size: 1.05em; color: var(--danger); border: .16em solid var(--danger); border-radius: .3em; padding: .05em .4em; transform: rotate(-12deg); opacity: .85; letter-spacing: .06em; pointer-events: none; }
+.rep-head { display: flex; align-items: center; gap: .55em; padding-right: 4.5em; }
+.rep-head canvas { width: 3.4em; height: 3.4em; flex: none; background: var(--steel-2); border: .13em solid var(--ink); border-radius: .5em; }
+.rep-head small { display: block; font-size: .72em; color: var(--hazard); letter-spacing: .08em; }
+.rep-head h2 { font-size: 1.25em; text-align: left; line-height: 1.15; text-wrap: balance; }
+.rep-time { display: flex; flex-direction: column; gap: .25em; }
+.rep-time-row { display: flex; justify-content: space-between; align-items: baseline; }
+.rep-time-row b { font-family: var(--font-display); font-weight: 400; font-size: 1.1em; font-variant-numeric: tabular-nums; }
+.rep-time-row span { font-size: .72em; color: var(--fg-dim); }
+.rep-bar { height: .55em; background: var(--ink); border-radius: .3em; overflow: hidden; }
+.rep-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--hazard), #ffe27a); border-radius: .3em; }
+.rep-loot { display: flex; flex-wrap: wrap; gap: .4em; justify-content: center; }
+.loot-chip { display: flex; flex-direction: column; align-items: center; gap: .1em; min-width: 3.6em; padding: .35em .45em .3em; background: var(--steel-2); border: .13em solid var(--ink); border-radius: .5em; font-family: var(--font-display); font-size: .95em; font-variant-numeric: tabular-nums; }
+.loot-chip i { width: 1.7em; height: 1.7em; background: center / contain no-repeat; }
+.loot-chip i.c { background-image: var(--ico-coin); }
+.loot-chip i.g { background-image: var(--ico-gem); }
+.loot-chip.dbl { border-color: var(--hazard); box-shadow: 0 0 0 .1em var(--hazard); }
 /* ---- 분대 */
 #squadCv { width: 100%; height: auto; aspect-ratio: 480 / 230; background: radial-gradient(ellipse at 50% 80%, #2f4a35, #18261d 70%); border: .13em solid var(--ink); border-radius: .5em; flex: none; }
 #ver { font-size: .62em; color: #fff; opacity: .85; text-shadow: 0 .1em 0 var(--ink), 0 -.1em 0 var(--ink), .1em 0 0 var(--ink), -.1em 0 0 var(--ink); position: absolute; top: calc(.15em + var(--st)); right: .7em; z-index: 6; pointer-events: none; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -283,7 +302,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
         <h1 class="logo"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span></h1>
         <p class="tagline">강화복 해병 서바이벌</p>
         <div class="grow"></div>
-        <button id="btnIdle" class="btn gold sm idle-btn" type="button">방치 보상 <b id="idleInfo">+0</b> 받기</button>
+        <button id="btnIdle" class="btn gold sm idle-btn" type="button">작전 보고 <b id="idleInfo">+0</b></button>
         <div class="stage-sel">
           <button id="btnPrev" class="btn sq" type="button" aria-label="이전 스테이지"><svg viewBox="0 0 24 24"><path d="M16 4 7 12l9 8z" fill="currentColor"/></svg></button>
           <div class="panel stage-card"><small id="selNo">STAGE 1</small><b id="selName">새싹 평원</b><span id="selInfo"></span></div>
@@ -421,6 +440,24 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       </div>
     </div>
 
+    <div id="idleRep" class="overlay" hidden>
+      <div class="panel sheet report" role="dialog" aria-labelledby="repTitle">
+        <span class="rep-stamp" aria-hidden="true">임무 완료</span>
+        <div class="rep-head">
+          <canvas id="repCv" width="96" height="96" aria-hidden="true"></canvas>
+          <div><small>부재 중 작전 보고</small><h2 id="repTitle">STAGE 1 일대 방어</h2></div>
+        </div>
+        <div class="rep-time"><div class="rep-time-row"><b id="repTime">0분</b><span id="repCap">최대 8시간</span></div><div class="rep-bar"><i id="repBar"></i></div></div>
+        <div class="stats" id="repStats"></div>
+        <div class="rep-loot" id="repLoot"></div>
+        <p class="note" id="repNote"></p>
+        <div class="btn-row">
+          <button id="btnRepDouble" class="btn" type="button">2배 받기 <span class="price"><span class="gem-dot"></span>30</span></button>
+          <button id="btnRepClaim" class="btn gold" type="button">받기</button>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" role="status"></div>
   </div>
 </div>
@@ -447,7 +484,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.32', VERSION_DATE = '2026.10.05', VERSION_NOTE = '의무병 걷는 그림, 치료량 줄이고 단계마다 공격력 버프';   // 게시할 때마다 올린다
+const VERSION = 'v0.33', VERSION_DATE = '2026.10.05', VERSION_NOTE = '방치 보상을 작전 보고 창으로 (코인·보석·장비)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1978,9 +2015,49 @@ function trySortie(stage) {
   if (save.energy >= ENERGY_MAX) save.energyAt = Date.now();
   save.energy -= ENERGY_COST; writeSave(); startRun(stage); return true;
 }
+// ---------- 부재 중 작전 보고: 자리를 비운 동안 분대가 싸운 결과를 보고서로 보여 주고 받는다
+const IDLE_GEMS_PER_H = 5, IDLE_GEAR_MIN = 120, IDLE_DOUBLE_GEMS = 30, IDLE_POPUP_MIN = 10;
+let idleRep = null;            // 열려 있는 보고서 (받기 전까지 내용이 바뀌지 않게 한 번만 굴린다)
+function fmtDur(m) { m = Math.floor(m); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; }
+function makeIdleReport() {
+  const m = idleMinutes(), st = clamp(save.best || 1, 1, STAGES.length), room = Math.max(0, INV_CAP - save.inv.length);
+  const gear = []; for (let i = 0, n = Math.min(room, Math.floor(m / IDLE_GEAR_MIN)); i < n; i++) gear.push(makeGear(save.best + 1));
+  const kills = Math.round(m * (8 + 2 * save.best) * (0.92 + Math.random() * 0.16));
+  return { m, st, coins: idleReward(), gems: Math.floor(m / 60 * IDLE_GEMS_PER_H), gear, kills, elites: Math.floor(m / 40), hurt: Math.floor(m / 25), full: room < Math.floor(m / IDLE_GEAR_MIN) };
+}
+function openIdleReport() {
+  if (idleRep || idleReward() < 1) return;
+  const r = idleRep = makeIdleReport(), S = STAGES[r.st - 1];
+  setTxt('repTitle', save.best ? `STAGE ${r.st} ${S.name} 일대 방어` : '기지 주변 경계 근무');
+  setTxt('repTime', fmtDur(r.m)); setTxt('repCap', r.m >= IDLE_CAP_MIN ? '최대치까지 쌓였어요' : `최대 ${IDLE_CAP_MIN / 60}시간까지 쌓여요`);
+  el('repBar').style.width = (r.m / IDLE_CAP_MIN * 100).toFixed(1) + '%';
+  const stats = el('repStats'); stats.textContent = '';
+  for (const [k, v] of [['처치한 적', fmt(r.kills)], ['격퇴한 대형 개체', fmt(r.elites)], ['부상 후 복귀', r.hurt + '회'], ['회수한 장비', r.gear.length + '개']]) stats.append(mk('span', '', k), mk('b', '', v));
+  drawIdleLoot(false);
+  setTxt('repNote', r.full ? '보관함이 가득 차서 장비 일부를 회수하지 못했어요' : r.gear.length ? '' : `장비는 ${IDLE_GEAR_MIN / 60}시간마다 하나씩 회수해요`);
+  const db = el('btnRepDouble'); db.disabled = save.gems < IDLE_DOUBLE_GEMS; db.title = `보석 ${IDLE_DOUBLE_GEMS}개로 코인·보석 2배`;
+  const cv3 = el('repCv'), c = cv3.getContext('2d'); c.clearRect(0, 0, 96, 96);
+  if (ATLAS.ready) { c.save(); c.translate(50, 92); c.scale(1.9, 1.9); drawMarine(c, 0, 0, { dir: 1, idle: 0, s: 1 }); c.restore(); }
+  el('idleRep').hidden = false; SFX.level();
+}
+function drawIdleLoot(dbl) {
+  const r = idleRep, box = el('repLoot'); box.textContent = '';
+  const chip = (cls, n) => { const d = mk('div', 'loot-chip' + (dbl ? ' dbl' : '')); d.append(mk('i', cls), mk('span', '', '+' + fmt(n))); box.append(d); };
+  chip('c', r.coins * (dbl ? 2 : 1)); if (r.gems) chip('g', r.gems * (dbl ? 2 : 1));
+  for (const it of r.gear) box.append(gearTile(it, 0, true));
+}
+function claimIdleReport(dbl) {
+  const r = idleRep; if (!r) return;
+  if (dbl) { if (save.gems < IDLE_DOUBLE_GEMS) { SFX.deny(); return; } save.gems -= IDLE_DOUBLE_GEMS; }
+  const k = dbl ? 2 : 1; save.coins += r.coins * k; save.gems += r.gems * k;
+  for (const it of r.gear) save.inv.push(it);
+  save.idleFrom = Date.now(); writeSave(); idleRep = null; el('idleRep').hidden = true;
+  SFX.coin(); toast(`코인 +${fmt(r.coins * k)}` + (r.gems ? ` · 보석 +${fmt(r.gems * k)}` : '') + (r.gear.length ? ` · 장비 ${r.gear.length}개` : ''));
+  if (appState === 'lobby') setTab(curTab);
+}
 function refreshIdle() {
   const r = idleReward(), m = idleMinutes();
-  setTxt('idleInfo', '+' + fmt(r) + (m >= IDLE_CAP_MIN ? ' (최대)' : ''));
+  setTxt('idleInfo', '코인 +' + fmt(r) + (m >= IDLE_CAP_MIN ? ' (최대)' : ''));
   el('btnIdle').disabled = r < 1;
   el('btnIdle').title = `${m >= 60 ? Math.floor(m / 60) + '시간 ' : ''}${Math.floor(m % 60)}분 동안 쌓인 보상 (최대 8시간)`;
 }
@@ -2287,7 +2364,9 @@ function bindUi() {
   });
   el('rngMusic').addEventListener('input', e => { save.musicVol = +e.target.value; writeSave(); SFX.resume(); SFX.music(); refreshSet(); });
   tap('btnEnergyBuy', () => { tickEnergy(); if (save.energy >= ENERGY_MAX) return; if (save.gems < ENERGY_REFILL_GEMS) { SFX.deny(); toast('보석이 부족합니다'); return; } save.gems -= ENERGY_REFILL_GEMS; save.energy = Math.min(ENERGY_MAX, save.energy + ENERGY_REFILL); writeSave(); SFX.buy(); toast(`에너지 +${ENERGY_REFILL}`); refreshShop(); refreshEnergy(); });
-  tap('btnIdle', () => { const r = idleReward(); if (r < 1) return; save.coins += r; save.idleFrom = Date.now(); writeSave(); SFX.coin(); toast(`방치 보상 +${fmt(r)} 코인`); refreshLobby(); });
+  tap('btnIdle', () => { SFX.click(); openIdleReport(); });
+  tap('btnRepClaim', () => claimIdleReport(false));
+  tap('btnRepDouble', () => claimIdleReport(true));
   tap('btnGdEquip', () => { const it = gearById(gearSel); if (!it) return; save.eq[it.s] = save.eq[it.s] === it.id ? 0 : it.id; writeSave(); SFX.buy(); refreshGear(); });
   tap('btnGdUp', () => { const it = gearById(gearSel); if (!it || it.lv >= GEAR_MAX_LV) return; const c = gearUpCost(it); if (save.coins < c) { SFX.deny(); toast('코인이 부족합니다'); return; } save.coins -= c; it.lv++; writeSave(); SFX.buy(); refreshGear(); });
   tap('btnGdSell', () => { const it = gearById(gearSel); if (!it || save.eq[it.s] === it.id) return; const v = gearSell(it); save.inv.splice(save.inv.indexOf(it), 1); save.coins += v; gearSel = 0; writeSave(); SFX.coin(); toast(`분해 +${fmt(v)} 코인`); refreshGear(); });
@@ -2374,6 +2453,7 @@ if (!save.idleFrom || save.idleFrom > Date.now()) save.idleFrom = Date.now();
 // ---------- 앱(래퍼) 연동: 브라우저에는 MK_NATIVE 가 없어 그냥 지나간다
 // 안드로이드 뒤로 가기: 창 닫기 → 일시정지 → 전투 탭. 더 닫을 것이 없으면 false
 function onBack() {
+  if (idleRep) { claimIdleReport(false); return true; }
   if (appState === 'run' && G) { if (G.state === 'play') openPause(); else if (G.state === 'paused') closePause(); return true; }
   if (curTab !== 'Home') { setTab('Home'); return true; }
   return false;
@@ -2385,7 +2465,9 @@ function bindNative() {
 }
 resize(); bindUi(); bindNative(); setTxt('ver', VERSION); toLobby();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { curFit.gen = 1; if (appState === 'lobby') refreshWallet(); });
-loadAtlas(() => { const ic = el('stimIco'); if (ic) sprC(ic.getContext('2d'), 'i_stim', 48, 48, 90); buildTabs(); });
+loadAtlas(() => { const ic = el('stimIco'); if (ic) sprC(ic.getContext('2d'), 'i_stim', 48, 48, 90); buildTabs(); if (appState === 'lobby' && idleMinutes() >= IDLE_POPUP_MIN) openIdleReport(); });
+// 앱을 내려 뒀다가 다시 열었을 때도 오래 비웠으면 보고서를 띄운다
+document.addEventListener('visibilitychange', () => { if (!document.hidden && appState === 'lobby' && idleMinutes() >= IDLE_POPUP_MIN) openIdleReport(); });
 setInterval(() => { if (appState === 'lobby') refreshIdle(); }, 5000);
 setInterval(() => { if (appState === 'lobby') refreshEnergy(); }, 1000);
 window.__mk = { get G() { return G; }, save, audio: () => SFX.debug(), start: startRun, speed(n) { simSteps = n; }, pick: autoPick, step(dt, n) { for (let i = 0; i < n && G; i++) stepRun(dt); } };
