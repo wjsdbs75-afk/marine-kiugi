@@ -446,7 +446,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.28', VERSION_DATE = '2026.10.05', VERSION_NOTE = '보석 상점을 상점 탭으로, 하단 메뉴 5칸(분대 추가, 전투 가운데)';   // 게시할 때마다 올린다
+const VERSION = 'v0.29', VERSION_DATE = '2026.10.05', VERSION_NOTE = '의무병이 초반 레벨업 3번 안에 꼭 나옴';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1488,6 +1488,10 @@ function rollChoices() {
     for (; i < bag.length - 1; i++) { r -= wt(bag[i]); if (r <= 0) break; }
     res.push(bag.splice(i, 1)[0]);
   }
+  // 의무병은 초반 레벨업 3번 안에 꼭 한 번은 보여 준다 (1번째 1/3, 2번째 2/3, 3번째에는 반드시)
+  const med = UPS.find(u => u.id === 'medic');
+  if (med && !G.up.medic && !G.medicShown && (G.luCount || 0) <= 3 && !res.includes(med) && (G.luCount >= 3 || Math.random() < (G.luCount || 1) / 3)) { if (res.length >= 3) res[2] = med; else res.push(med); }
+  if (res.includes(med)) G.medicShown = true;
   for (const f of FALLBACK_UPS) if (res.length < 3) res.push(f);
   return res;
 }
@@ -2231,7 +2235,7 @@ function refreshSet() {
 }
 // ---------- 레벨업
 function openLevelUp() {
-  G.state = 'levelup'; G.choices = rollChoices(); G.autoPickT = 2.6; input.active = false; input.jx = input.jy = 0;
+  G.state = 'levelup'; G.luCount = (G.luCount || 0) + 1; G.choices = rollChoices(); G.autoPickT = 2.6; input.active = false; input.jx = input.jy = 0;
   G.flash = 0.25; G.flashCol = '255,255,255';
   SFX.level(); if (!G.chest) say('level');
   renderLevelUp();
