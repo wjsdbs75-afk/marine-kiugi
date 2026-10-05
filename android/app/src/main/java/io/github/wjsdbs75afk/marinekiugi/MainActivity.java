@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
@@ -96,7 +97,11 @@ public class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ 창과 화면
 
-    /** 게임 화면을 상태 바와 내비게이션 바 뒤까지 깔고, 꺼지지 않게 한다. */
+    /**
+     * 게임 화면을 상태 바와 내비게이션 바 뒤까지 깔고, 꺼지지 않게 한다.
+     * 하단 내비게이션 바(뒤로·홈·최근)는 몰입 모드로 숨긴다. 아래에서 쓸어 올리면 잠깐 나타났다 사라진다.
+     * 상태 바는 그대로 둔다.
+     */
     private void setUpWindow() {
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -110,10 +115,30 @@ public class MainActivity extends Activity {
         }
         if (Build.VERSION.SDK_INT >= 30) {
             w.setDecorFitsSystemWindows(false);
+        }
+        hideNavigationBar();
+    }
+
+    /** 내비게이션 바를 숨긴다. 다이얼로그·키보드·다른 앱에 다녀오면 시스템이 다시 보이게 할 수 있어 돌아올 때마다 부른다. */
+    @SuppressWarnings("deprecation")
+    private void hideNavigationBar() {
+        Window w = getWindow();
+        if (Build.VERSION.SDK_INT >= 30) {
+            Api30.hideNavigationBar(w);
         } else {
-            w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            // LAYOUT_STABLE 은 넣지 않는다. 넣으면 숨긴 바의 높이까지 여백으로 잡혀 게임이 맨 아래까지 내려오지 않는다
+            w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideNavigationBar();
         }
     }
 
@@ -551,6 +576,16 @@ public class MainActivity extends Activity {
                     WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
             return new int[] {i.top, i.bottom};
         }
+
+        /** 숨긴 내비게이션 바는 쓸어 올릴 때만 잠깐 화면 위에 겹쳐 나온다 (게임 배치는 움직이지 않는다). */
+        static void hideNavigationBar(Window w) {
+            WindowInsetsController c = w.getInsetsController();
+            if (c == null) {
+                return;
+            }
+            c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            c.hide(WindowInsets.Type.navigationBars());
+        }
     }
 
     /** 안드로이드 13 이상의 뒤로 가기 등록. */
@@ -566,6 +601,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        hideNavigationBar();
         if (web != null) {
             web.onResume();
         }
