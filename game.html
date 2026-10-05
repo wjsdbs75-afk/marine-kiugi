@@ -395,7 +395,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.23', VERSION_DATE = '2026.10.05', VERSION_NOTE = '이동하면서도 스팀팩·AUTO·배속 버튼이 눌리게';   // 게시할 때마다 올린다
+const VERSION = 'v0.24', VERSION_DATE = '2026.10.05', VERSION_NOTE = '위생병 합류: 따라다니며 치료';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -468,10 +468,10 @@ const UPS = [
   { id: 'cryo',     name: '빙결탄',       max: 3, w: 5, pr: 4, skill: true, desc: l => `맞은 적의 이동 속도 ${20 + 10 * l}% 감소 (2초)` },
   { id: 'boomkill', name: '연쇄 폭발',    max: 5, w: 6, pr: 7, skill: true, desc: l => `처치한 적이 ${15 + 7 * l}% 확률로 폭발, 연쇄로 번진다` },
   { id: 'adren',    name: '아드레날린',   max: 5, w: 6, pr: 6, skill: true, desc: l => `처치할 때마다 3초간 연사 +${3 * l}% (5번까지 중첩)` },
-  // 분대원 강화 (분대원이 있을 때만 등장)
+  // 분대원 강화 (분대원이 있을 때만 등장. 위생병 숙련은 언제나)
   { id: 'sqdmg',    name: '분대 화력',     max: 5, w: 7, pr: 6, need: 'squad', desc: '분대원 피해 +30%' },
   { id: 'sqrate',   name: '분대 속사',     max: 5, w: 7, pr: 6, need: 'squad', desc: '분대원 연사 속도 +20%' },
-  { id: 'medic',    name: '야전 위생병',   max: 3, w: 5, pr: 5, need: 'squad', skill: true, desc: l => `분대원이 6초마다 체력 ${(2.5 * l).toFixed(1)}% 치료` },
+  { id: 'medic',    name: '위생병 숙련',   max: 3, w: 5, pr: 5, desc: l => `위생병 치료량 +${50 * l}%` },
 ];
 const LAUNCH_N = [12, 10, 9, 8, 7], CHARGE_N = [8, 7, 6, 6, 5];
 const upDesc = (u, lv) => typeof u.desc === 'function' ? u.desc(Math.min(u.max, lv + 1)) : u.desc;
@@ -778,11 +778,27 @@ function hslEdit(d, fn) {
   }
 }
 const SQUAD_HUES = [150, 2, 285, 35];
+// 색을 h(0~360), s, l(0~1) 로 바꿔 쓴다. fn 이 null 이면 그대로 둔다
+function hslMap(d, fn) {
+  const hue2 = (p, q, t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 8) continue;
+    const r = d[i] / 255, g = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, dl = mx - mn;
+    let h = 0, sa = 0;
+    if (dl > 0.0001) { sa = dl / (1 - Math.abs(2 * l - 1) || 1); h = mx === r ? ((g - b) / dl) % 6 : mx === g ? (b - r) / dl + 2 : (r - g) / dl + 4; h = (h * 60 + 360) % 360; }
+    const o = fn(h, sa, l); if (!o) continue;
+    const [H, S, L] = o, q = L < 0.5 ? L * (1 + S) : L + S - L * S, pp = 2 * L - q, hh = H / 360;
+    d[i] = hue2(pp, q, hh + 1 / 3) * 255; d[i + 1] = hue2(pp, q, hh) * 255; d[i + 2] = hue2(pp, q, hh - 1 / 3) * 255;
+  }
+}
 function varFn(key) {
   if (key === 'white') return d => { for (let i = 0; i < d.length; i += 4) { d[i] = d[i + 1] = d[i + 2] = 255; } };
   if (key === 'stim') return d => hslEdit(d, (h, s, l) => ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? 356 : null);   // 주황 발광부(바이저·어깨등·총 띠)를 붉게
   if (key.startsWith('sq')) { const t = SQUAD_HUES[+key.slice(2) % SQUAD_HUES.length]; return d => hslEdit(d, (h, s) => (h > 196 && h < 264 && s > 0.12) ? t : null); }
   if (key.startsWith('hue')) { const dg = +key.slice(3); return d => hslEdit(d, h => h + dg); }
+  // 위생병: 파란 장갑은 푸른빛이 도는 흰색으로, 주황 발광부(바이저·어깨등)는 치료의 초록으로
+  // (채도가 낮은 총·관절의 어두운 쇠붙이는 건드리지 않아야 얼룩이 생기지 않는다)
+  if (key === 'med') return d => hslMap(d, (h, s, l) => (h > 196 && h < 264 && s > 0.38 && l > 0.12) ? [214, 0.14, Math.min(0.97, 0.5 + l * 0.62)] : ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? [138, 0.85, Math.min(0.62, l)] : null);
   if (key === 'ice') return d => { for (let i = 0; i < d.length; i += 4) { d[i] = 150; d[i + 1] = 215; d[i + 2] = 255; } };
   if (key === 'gem1') return d => hslEdit(d, () => 135);
   if (key === 'gem2') return d => hslEdit(d, () => 285);
@@ -889,6 +905,30 @@ function drawMarine(c, x, y, o) {
 
 // ---------- 수송선 (x, y = 선체 중심)
 const SHIP_W = 150;
+// ---------- 위생병: 흰 장갑 해병 + 어깨의 붉은 십자 완장
+function medCross(c, x, y, r) {
+  c.fillStyle = OUT; rrect(c, x - r - 1.2, y - r - 1.2, 2 * r + 2.4, 2 * r + 2.4, r * 0.5); c.fill();
+  c.fillStyle = '#ffffff'; rrect(c, x - r, y - r, 2 * r, 2 * r, r * 0.4); c.fill();
+  const a = r * 0.34, b = r * 0.78; c.fillStyle = '#e8332b';
+  c.fillRect(x - a, y - b, 2 * a, 2 * b); c.fillRect(x - b, y - a, 2 * b, 2 * a);
+}
+function drawMedic(c, m, s) {
+  drawMarine(c, m.x, m.y, { dir: m.dir, walk: m.walk, idle: m.idle, moving: m.moving, s, v: 'med', lift: m.lift || 0 });
+  if (!ATLAS.ready) return;
+  const dir = (m.dir | 0) & 7, side = DIRS[dir][1] ? 1 : -1, H = HERO_H * s;
+  // 등을 보일 때(북쪽)는 등판 가운데, 아니면 앞에서 보이는 어깨에 붙인다
+  const bx = dir === 6 ? 0 : dir === 2 ? -H * 0.15 : side * H * 0.1, by = dir === 6 ? H * 0.6 : H * 0.68;
+  medCross(c, m.x + bx, m.y - (m.lift || 0) - by, 3.1 * s);
+}
+// 치료 광선: 위생병 손에서 해병 가슴까지 흔들리는 초록 빛줄기
+function drawHealBeam(c, m, p, T) {
+  const x0 = m.x, y0 = m.y - HERO_H * 0.86 * 0.5, x1 = p.x, y1 = p.y - HERO_H * 0.5, dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  const path = (amp, ph) => { c.beginPath(); for (let i = 0; i <= 12; i++) { const t = i / 12, w = Math.sin(t * Math.PI) * amp * Math.sin(T * 18 + t * 9 + ph); c.lineTo(x0 + dx * t + nx * w, y0 + dy * t + ny * w); } };
+  c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.globalAlpha = 0.35 + 0.15 * Math.sin(T * 12); c.strokeStyle = '#5fe08a'; c.lineWidth = 6; path(3, 0); c.stroke();
+  c.globalAlpha = 0.95; c.strokeStyle = '#d8ffe2'; c.lineWidth = 1.8; path(2.2, 1.7); c.stroke();
+  c.restore();
+}
 function drawShip(c, x, y, o) {
   const m = ATLAS.map.ship; if (!m || !ATLAS.ready) return;
   const s = o.s || 1, t = o.t || 0, W2 = SHIP_W * s, H2 = W2 * m[3] / m[2], fx = o.flip ? -1 : 1;
@@ -1093,7 +1133,7 @@ function newRun(stage) {
     stage, st: STAGES[stage - 1], round: 0, roundT: 0, time: 0, kills: 0, coins: 0,
     state: 'intro', introT: 0, introFast: false, landed: false,
     p: { x: 0, y: 0, hp: 100, maxHp: 100, dir: 2, aim: Math.PI / 2, walk: 0, idle: 0, moving: false, fire: 0, fireT: 0.3, stimT: 0, stimLock: 0, iframe: 0, shieldOn: false, shieldT: 0, shotsL: 0, shotsC: 0, shotSeq: 0, adr: 0, adrT: 0, visible: false, lift: 0, lowBark: 0, dead: false },
-    enemies: [], bullets: [], ebullets: [], gems: [], picks: [], parts: [], texts: [], fx: [], mines: [], nades: [], shells: [], bombers: [], booms: [], tMedic: 6, squad: [], drones: [],
+    enemies: [], bullets: [], ebullets: [], gems: [], picks: [], parts: [], texts: [], fx: [], mines: [], nades: [], shells: [], bombers: [], booms: [], medic: null, squad: [], drones: [],
     up: {}, loot: [], level: 1, xp: 0, xpNeed: 11, pending: 0, reroll: 1, chest: 0, choices: [], autoPickT: 0,
     spawnAcc: 0, boss: null, bossSpawned: false,
     shake: 0, flash: 0, flashCol: '255,60,60', banner: null, bark: null,
@@ -1120,6 +1160,33 @@ function recompute() {
   p.xpMul = 1 + 0.05 * ml('xp') + gb.xp / 100; p.coinMul = 1 + 0.10 * ml('gold') + gb.gold / 100;
 }
 const stimCostHp = () => Math.ceil(G.p.maxHp * G.p.stimCost);
+// 위생병: 언제나 한 명이 해병 뒤를 따라다니며 다친 만큼 치료한다 (싸우지 않고, 맞지도 않는다)
+function spawnMedic() {
+  const p = G.p; if (G.medic) return;
+  G.medic = { x: p.x - 24, y: p.y - 14, dir: 2, walk: 0, idle: rand(6), moving: false, healing: false, healAcc: 0, pulseT: 0 };
+  burst(G.medic.x, G.medic.y - 10, '#9dffb8', 12, 120);
+}
+function updateMedic(dt) {
+  const g = G, p = g.p, m = g.medic; if (!m) return;
+  // 해병 등 뒤에서 왼쪽으로 비켜선 자리로 따라간다 (바로 뒤에 서면 몸에 가려 치료 광선이 안 보인다)
+  const ba = p.aim + Math.PI + 0.95, bx = p.x + Math.cos(ba) * 40, by = p.y + Math.sin(ba) * 26;
+  const dx = bx - m.x, dy = by - m.y, d = Math.hypot(dx, dy) || 1;
+  m.moving = false;
+  if (d > 8) { const sp = Math.min((d - 8) * 8, p.speed * 1.9); m.x += dx / d * sp * dt; m.y += dy / d * sp * dt; m.moving = sp > 14; }
+  if (m.moving) m.walk += dt * 16; else m.idle += dt * 3;
+  const tx = p.x - m.x, ty = p.y - m.y, dp = Math.hypot(tx, ty);
+  m.healing = !p.dead && p.hp < p.maxHp && dp < 110;
+  m.dir = dirStep(m.dir, m.healing || !m.moving ? Math.atan2(ty, tx) : Math.atan2(dy, dx));
+  if (m.healing) {
+    const v = p.maxHp * 0.012 * (1 + 0.5 * (g.up.medic || 0)) * dt;   // 기본 초당 최대 체력의 1.2%
+    p.hp = Math.min(p.maxHp, p.hp + v); m.healAcc += v; m.pulseT -= dt;
+    if (m.pulseT <= 0) {
+      m.pulseT = 1.2;
+      if (m.healAcc >= 1) { floatText(p.x + 10, p.y - 50, '+' + Math.floor(m.healAcc), '#8ff0a0', 11, 0.6); m.healAcc -= Math.floor(m.healAcc); }
+      for (let i = 0; i < 3 && g.parts.length < 240; i++) g.parts.push({ x: p.x + rand(-10, 10), y: p.y - rand(10, 30), vx: rand(-8, 8), vy: rand(-40, -22), g: 0, life: 0.6, max: 0.6, size: rand(2.5, 4), col: 'rgba(143,240,160,.9)' });
+    }
+  } else m.pulseT = 0;
+}
 function syncSquad() {
   const n = (G.up.squad || 0) + (save.meta.squad || 0);
   while (G.squad.length < n) {
@@ -1362,7 +1429,7 @@ function updateIntro(dt) {
   else if (t < 1.6) { s.x = 0; s.alt = HOVER + Math.sin(t * 6) * 1.5; s.hatch = clamp((t - 1.2) / 0.3, 0, 1); s.tilt = 0; s.thrust = 0; }
   else if (t < 2.05) { p.visible = true; const k = (t - 1.6) / 0.45; p.lift = (HOVER - 26) * (1 - k * k); s.alt = HOVER + Math.sin(t * 6) * 1.5; }
   else if (t < 2.6) {
-    if (!g.landed) { g.landed = true; p.lift = 0; dust(p.x, p.y, 12); shake(5); SFX.land(); say('land'); syncSquad(); }
+    if (!g.landed) { g.landed = true; p.lift = 0; dust(p.x, p.y, 12); shake(5); SFX.land(); say('land'); syncSquad(); spawnMedic(); }
     s.hatch = clamp(1 - (t - 2.15) / 0.3, 0, 1); s.alt = HOVER + Math.sin(t * 6) * 1.5;
   } else if (t < 3.5) { const k = ei((t - 2.6) / 0.9); s.x = lerp(0, -280, k); s.alt = lerp(HOVER, 380, k); s.tilt = lerp(0, 0.14, k); s.thrust = k; s.hatch = 0; }
   else { s.show = false; g.state = 'play'; startRound(1); }
@@ -1400,7 +1467,7 @@ function updatePlay(dt) {
     if (c >= 6) useStim();
   }
 
-  updateSquad(dt, stim); updateSkills(dt); updateBullets(dt); updateEnemies(dt); updateEBullets(dt); updatePickups(dt);
+  updateSquad(dt, stim); updateMedic(dt); updateSkills(dt); updateBullets(dt); updateEnemies(dt); updateEBullets(dt); updatePickups(dt);
   if (g.enemies.some(e => e.dead)) g.enemies = g.enemies.filter(e => !e.dead);
   if (g.boss && g.boss.dead) g.boss = null;
   if (g.pending > 0 && g.state === 'play') openLevelUp();
@@ -1490,10 +1557,6 @@ function updateSkills(dt) {
   // 연쇄 폭발 (조금 늦게 터져서 줄줄이 번진다)
   for (let i = g.booms.length - 1; i >= 0; i--) { const q = g.booms[i]; q.t -= dt; if (q.t <= 0) { g.booms.splice(i, 1); explode(q.x, q.y, 44, q.dmg, '#c77dff'); } }
   // 야전 위생병
-  if (u.medic && g.squad.length) {
-    g.tMedic -= dt;
-    if (g.tMedic <= 0) { g.tMedic = 6; if (p.hp < p.maxHp) { const v = Math.max(1, Math.round(p.maxHp * 0.025 * u.medic)); p.hp = Math.min(p.maxHp, p.hp + v); floatText(p.x, p.y - 52, '+' + v, '#8ff0a0', 13); g.fx.push({ k: 'ring', x: p.x, y: p.y - 18, r: 30, t: 0, dur: 0.35, col: '#8ff0a0' }); } }
-  }
   // 지뢰
   if (u.mine) {
     g.tMine -= dt;
@@ -1666,12 +1729,14 @@ function render() {
   const x0 = cx - 50, x1 = cx + VW + 50, y0 = cy - 30, y1 = cy + VH + 90;
   for (const e of g.enemies) if (e.x > x0 && e.x < x1 && e.y > y0 && e.y < y1) drawList.push(e);
   for (const m of g.squad) { m._k = 1; drawList.push(m); }
+  if (g.medic) { g.medic._k = 4; drawList.push(g.medic); }
   for (const d of g.drones) { d._k = 2; drawList.push(d); }
   p._k = 3; drawList.push(p);
   drawList.sort((a, b) => a.y - b.y);
   for (const o of drawList) {
     if (o._k === 1) drawMarine(c, o.x, o.y, { dir: o.dir, walk: o.walk, idle: o.idle, moving: o.moving, fire: o.fire, fa: o.fa, fseed: o.fseed, s: 0.84, v: o.v, stim: p.stimT > 0 });
     else if (o._k === 2) drawDrone(c, o.x, o.y, T + o.off);
+    else if (o._k === 4) drawMedic(c, o, 0.86);
     else if (o._k === 3) {
       if (p.visible && !p.dead) {
         const blink = p.iframe > 0 && Math.floor(T * 22) % 2 === 0;
@@ -1682,6 +1747,7 @@ function render() {
       }
     } else drawEnemy(c, o);
   }
+  if (g.medic && g.medic.healing && p.visible && !p.dead) drawHealBeam(c, g.medic, p, T);
 
   for (const b of g.bullets) drawBullet(c, b);
   for (const b of g.ebullets) drawEBullet(c, b, T);
@@ -1760,6 +1826,7 @@ function renderLobby(c) {
   drawShip(c, -50, -24 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
   const n = save.meta.squad || 0;
   for (let i = 0; i < n; i++) drawMarine(c, 72 + i * 22, 12 + i * 20, { dir: 1, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
+  drawMedic(c, { x: -14, y: 30, dir: 1, idle: T * 3 + 1 }, 1.45);
   drawMarine(c, 26, 46, { dir: 1, idle: T * 3, s: 1.9 });
   c.restore();
 }
