@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">마린 키우기</string>
+    <string name="error_title">게임을 불러오지 못했어요</string>
+    <string name="error_offline">인터넷 연결을 확인한 뒤 다시 시도해 주세요.</string>
+    <string name="error_retry">다시 시도</string>
+    <string name="loading_first">게임을 받는 중…</string>
+    <string name="loading_update">새 버전을 받는 중…</string>
+</resources>

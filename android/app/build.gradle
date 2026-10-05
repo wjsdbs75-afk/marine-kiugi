@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.application'
+}
+
+def gameUrl = (findProperty('gameUrl') ?: 'https://wjsdbs75-afk.github.io/marine-kiugi/').toString()
+// GitHub Actions 가 빌드 번호를 넘겨 준다. 번호가 커져야 기존 앱 위에 덮어 설치된다.
+def shellVersionCode = (findProperty('shellVersionCode') ?: '1').toString().toInteger()
+
+// 정식 서명 키는 저장소에 두지 않는다. GitHub Actions 가 Secrets 에서 꺼내 KEYSTORE_FILE 로 넘겨 준다.
+// 키가 없으면(내 컴퓨터에서 빌드할 때 등) 시험용 디버그 키로 서명한다. 그 APK 는 배포하면 안 된다.
+def keystorePath = System.getenv('KEYSTORE_FILE')
+def hasReleaseKey = keystorePath != null && !keystorePath.isEmpty() && new File(keystorePath).isFile()
+
+android {
+    namespace 'io.github.wjsdbs75afk.marinekiugi'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.github.wjsdbs75afk.marinekiugi'
+        minSdk 26
+        targetSdk 35
+        versionCode shellVersionCode
+        versionName "1.${shellVersionCode}"
+        buildConfigField 'String', 'GAME_URL', "\"${gameUrl}\""
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile new File(keystorePath)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS') ?: 'marine-kiugi'
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}

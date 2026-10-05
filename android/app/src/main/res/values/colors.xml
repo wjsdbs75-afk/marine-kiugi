@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="night">#05070F</color>
+    <color name="steel">#1C2740</color>
+    <color name="ink">#0A0F1C</color>
+    <color name="hazard">#FFC21F</color>
+    <color name="fg">#EAF0FF</color>
+    <color name="fg_dim">#A9B6D6</color>
+</resources>
