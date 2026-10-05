@@ -395,7 +395,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.26', VERSION_DATE = '2026.10.05', VERSION_NOTE = '위생병: 긴 소총 대신 십자 방패와 짧은 기관단총';   // 게시할 때마다 올린다
+const VERSION = 'v0.27', VERSION_DATE = '2026.10.05', VERSION_NOTE = '의무병: 레벨업에서 골라야 합류, 총 위치 바로잡음';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -468,10 +468,10 @@ const UPS = [
   { id: 'cryo',     name: '빙결탄',       max: 3, w: 5, pr: 4, skill: true, desc: l => `맞은 적의 이동 속도 ${20 + 10 * l}% 감소 (2초)` },
   { id: 'boomkill', name: '연쇄 폭발',    max: 5, w: 6, pr: 7, skill: true, desc: l => `처치한 적이 ${15 + 7 * l}% 확률로 폭발, 연쇄로 번진다` },
   { id: 'adren',    name: '아드레날린',   max: 5, w: 6, pr: 6, skill: true, desc: l => `처치할 때마다 3초간 연사 +${3 * l}% (5번까지 중첩)` },
-  // 분대원 강화 (분대원이 있을 때만 등장. 위생병 숙련은 언제나)
+  // 분대원 강화 (분대원이 있을 때만 등장)
   { id: 'sqdmg',    name: '분대 화력',     max: 5, w: 7, pr: 6, need: 'squad', desc: '분대원 피해 +30%' },
   { id: 'sqrate',   name: '분대 속사',     max: 5, w: 7, pr: 6, need: 'squad', desc: '분대원 연사 속도 +20%' },
-  { id: 'medic',    name: '위생병 숙련',   max: 3, w: 5, pr: 5, desc: l => `위생병 치료량 +${50 * l}%` },
+  { id: 'medic',    name: '의무병',        max: 3, w: 5, pr: 5, skill: true, desc: l => l <= 1 ? '의무병이 합류해 따라다니며 치료 (초당 체력 1%)' : `의무병 치료량 +50% (초당 체력 ${l}%)` },
 ];
 const LAUNCH_N = [12, 10, 9, 8, 7], CHARGE_N = [8, 7, 6, 6, 5];
 const upDesc = (u, lv) => typeof u.desc === 'function' ? u.desc(Math.min(u.max, lv + 1)) : u.desc;
@@ -576,10 +576,11 @@ const BARKS = {
   land:  ['착륙 완료! 청소 시작!', '도착! 다 덤벼!', '여기가 오늘 근무지군.'],
   stim:  ['크으~ 약발 받는다!', '풀파워다!!', '심장이 쿵쾅쿵쾅!', '멈출 수가 없다!'],
   level: ['진급이다!', '더 세졌다!', '좋았어!'],
-  low:   ['위생병 어디 갔어?!', '아야야… 위험해!', '후퇴는 없다!'],
+  low:   ['의무병 어디 갔어?!', '아야야… 위험해!', '후퇴는 없다!'],
   boss:  ['덩치 큰 놈이 온다!', '저건 좀 큰데…?'],
   clear: ['임무 완료. 퇴근!', '깔끔하게 정리했다!'],
   squad: ['신병 왔습니다!', '분대 합류!'],
+  medic: ['의무병 합류!', '치료는 맡겨 둬!'],
   strike: ['폭격 요청! 좌표 보낸다!', '화력 지원 바란다!', '머리 숙여! 폭격 온다!', '여기다, 쏟아부어!'],
 };
 
@@ -796,7 +797,7 @@ function varFn(key) {
   if (key === 'stim') return d => hslEdit(d, (h, s, l) => ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? 356 : null);   // 주황 발광부(바이저·어깨등·총 띠)를 붉게
   if (key.startsWith('sq')) { const t = SQUAD_HUES[+key.slice(2) % SQUAD_HUES.length]; return d => hslEdit(d, (h, s) => (h > 196 && h < 264 && s > 0.12) ? t : null); }
   if (key.startsWith('hue')) { const dg = +key.slice(3); return d => hslEdit(d, h => h + dg); }
-  // 위생병: 파란 장갑은 푸른빛이 도는 흰색으로, 주황 발광부(바이저·어깨등)는 치료의 초록으로
+  // 의무병: 파란 장갑은 푸른빛이 도는 흰색으로, 주황 발광부(바이저·어깨등)는 치료의 초록으로
   // (채도가 낮은 총·관절의 어두운 쇠붙이는 건드리지 않아야 얼룩이 생기지 않는다)
   if (key === 'med') return (d, w, h, name) => { medGunErase(d, w, h, name); hslMap(d, (h, s, l) => (h > 196 && h < 264 && s > 0.38 && l > 0.12) ? [214, 0.14, Math.min(0.97, 0.5 + l * 0.62)] : ((h < 50 || h > 345) && s > 0.5 && l > 0.3) ? [138, 0.85, Math.min(0.62, l)] : null); };
   if (key === 'ice') return d => { for (let i = 0; i < d.length; i += 4) { d[i] = 150; d[i + 1] = 215; d[i + 2] = 255; } };
@@ -804,7 +805,7 @@ function varFn(key) {
   if (key === 'gem2') return d => hslEdit(d, () => 285);
   return () => {};
 }
-// 위생병 그림에서 해병의 긴 소총을 지운다. 총구(_muz)에서 가슴까지 이어진 띠 안의 '장갑이 아닌' 픽셀이 대상.
+// 의무병 그림에서 해병의 긴 소총을 지운다. 총구(_muz)에서 가슴까지 이어진 띠 안의 '장갑이 아닌' 픽셀이 대상.
 // 몸 바깥으로 삐져나온 부분은 투명하게, 몸 안(위아래·좌우 모두 장갑에 둘러싸인 곳)은 장갑 색으로 메운다.
 function medGunErase(d, w, h, name) {
   const mm = /^hero_(.*?)(idle|r(\d))$/.exec(name || ''); if (!mm || !ATLAS.map._muz) return;
@@ -930,14 +931,14 @@ function drawMarine(c, x, y, o) {
 
 // ---------- 수송선 (x, y = 선체 중심)
 const SHIP_W = 150;
-// ---------- 위생병: 흰 장갑 해병 + 어깨의 붉은 십자 완장
+// ---------- 의무병: 흰 장갑 해병 + 어깨의 붉은 십자 완장
 function medCross(c, x, y, r) {
   c.fillStyle = OUT; rrect(c, x - r - 1.2, y - r - 1.2, 2 * r + 2.4, 2 * r + 2.4, r * 0.5); c.fill();
   c.fillStyle = '#ffffff'; rrect(c, x - r, y - r, 2 * r, 2 * r, r * 0.4); c.fill();
   const a = r * 0.34, b = r * 0.78; c.fillStyle = '#e8332b';
   c.fillRect(x - a, y - b, 2 * a, 2 * b); c.fillRect(x - b, y - a, 2 * b, 2 * a);
 }
-// 위생병 장비: 왼팔에 붉은 십자 방패, 오른손에 짧은 기관단총. 바라보는 방향(8방향)에 맞춰 원근을 준다
+// 의무병 장비: 왼팔에 붉은 십자 방패, 오른손에 짧은 기관단총. 바라보는 방향(8방향)에 맞춰 원근을 준다
 function medShield(c, x, y, H, wk, face) {
   const w = H * 0.36 * wk, h = H * 0.5, r = Math.min(w * 0.45, H * 0.07);
   c.save(); c.translate(x, y);
@@ -972,20 +973,23 @@ function drawMedic(c, m, s) {
   const dir = (m.dir | 0) & 7, H = HERO_H * s, a = dir * Math.PI / 4, fx = Math.cos(a), fy = Math.sin(a), lx = -fy, ly = fx;   // f: 바라보는 쪽, l: 오른손 쪽
   const by = m.y - (m.lift || 0), bob = m.moving ? Math.abs(Math.sin(m.walk || 0)) * H * 0.02 : Math.sin(m.idle || 0) * H * 0.008;
   const shW = Math.max(0.2, Math.abs(lx)), sx = m.x + (fx * 0.17 - lx * 0.1) * H, sy = by + (fy * 0.17 - ly * 0.1) * H * 0.5 - H * 0.46 - bob;
-  const gx = m.x + (fx * 0.2 + lx * 0.14) * H, gy = by + (fy * 0.2 + ly * 0.14) * H * 0.5 - H * 0.5 - bob;
-  const gAng = Math.atan2(fy * 0.5, fx), gLen = 0.45 + 0.55 * Math.abs(fx);
-  const shieldBack = fy < -0.2, gunBack = fy * 0.2 + ly * 0.14 < -0.02;
+  // 총은 오른손으로 가슴 높이에서 앞을 겨눈다 (허리 아래로 처지지 않게 깊이 차이는 조금만 반영)
+  const gd = fy * 0.08 + ly * 0.16, gx = m.x + (fx * 0.08 + lx * 0.16) * H, gy = by + gd * H * 0.3 - H * 0.6 - bob;
+  const gAng = Math.atan2(fy * 0.35, fx), gLen = 0.5 + 0.5 * Math.abs(fx);
+  const sd = fy * 0.17 - ly * 0.1, shieldBack = fy < -0.2, gunBack = gd < -0.02;
+  const gunOverShield = gd > sd;      // 총이 방패보다 앞(카메라 쪽)에 있으면 방패 위에 그린다
   if (shieldBack) medShield(c, sx, sy, H, shW, false);
   if (gunBack) medSmg(c, gx, gy, H, gAng, gLen);
   drawMarine(c, m.x, m.y, { dir: m.dir, walk: m.walk, idle: m.idle, moving: m.moving, s, v: 'med', lift: m.lift || 0 });
+  if (!gunBack && !gunOverShield) medSmg(c, gx, gy, H, gAng, gLen);
   if (!shieldBack) medShield(c, sx, sy, H, shW, fy > -0.2 && Math.abs(lx) > 0.45);
-  if (!gunBack) medSmg(c, gx, gy, H, gAng, gLen);
-  if (shieldBack || Math.abs(lx) < 0.45) {   // 방패 면이 안 보일 때는 어깨 완장으로 위생병임을 보여 준다
+  if (!gunBack && gunOverShield) medSmg(c, gx, gy, H, gAng, gLen);
+  if (shieldBack || Math.abs(lx) < 0.45) {   // 방패 면이 안 보일 때는 어깨 완장으로 의무병임을 보여 준다
     const side = DIRS[dir][1] ? 1 : -1, bx = dir === 6 ? 0 : side * H * 0.1, bh = dir === 6 ? H * 0.6 : H * 0.68;
     medCross(c, m.x + bx, by - bh, 3.1 * s);
   }
 }
-// 치료 광선: 위생병 손에서 해병 가슴까지 흔들리는 초록 빛줄기
+// 치료 광선: 의무병 손에서 해병 가슴까지 흔들리는 초록 빛줄기
 function drawHealBeam(c, m, p, T) {
   const x0 = m.x, y0 = m.y - HERO_H * 0.86 * 0.5, x1 = p.x, y1 = p.y - HERO_H * 0.5, dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
   const path = (amp, ph) => { c.beginPath(); for (let i = 0; i <= 12; i++) { const t = i / 12, w = Math.sin(t * Math.PI) * amp * Math.sin(T * 18 + t * 9 + ph); c.lineTo(x0 + dx * t + nx * w, y0 + dy * t + ny * w); } };
@@ -1237,7 +1241,7 @@ function recompute() {
   p.xpMul = 1 + 0.05 * ml('xp') + gb.xp / 100; p.coinMul = 1 + 0.10 * ml('gold') + gb.gold / 100;
 }
 const stimCostHp = () => Math.ceil(G.p.maxHp * G.p.stimCost);
-// 위생병: 언제나 한 명이 해병 뒤를 따라다니며 다친 만큼 치료한다 (싸우지 않고, 맞지도 않는다)
+// 의무병: 레벨업에서 '의무병'을 고르면 합류해 해병 뒤를 따라다니며 다친 만큼 치료한다 (싸우지 않고, 맞지도 않는다)
 function spawnMedic() {
   const p = G.p; if (G.medic) return;
   G.medic = { x: p.x - 24, y: p.y - 14, dir: 2, walk: 0, idle: rand(6), moving: false, healing: false, healAcc: 0, pulseT: 0 };
@@ -1255,7 +1259,7 @@ function updateMedic(dt) {
   m.healing = !p.dead && p.hp < p.maxHp && dp < 110;
   m.dir = dirStep(m.dir, m.healing || !m.moving ? Math.atan2(ty, tx) : Math.atan2(dy, dx));
   if (m.healing) {
-    const v = p.maxHp * 0.012 * (1 + 0.5 * (g.up.medic || 0)) * dt;   // 기본 초당 최대 체력의 1.2%
+    const v = p.maxHp * 0.01 * Math.max(1, g.up.medic || 1) * dt;   // 초당 최대 체력의 1% × 단계 (1→1%, 2→2%, 3→3%)
     p.hp = Math.min(p.maxHp, p.hp + v); m.healAcc += v; m.pulseT -= dt;
     if (m.pulseT <= 0) {
       m.pulseT = 1.2;
@@ -1433,6 +1437,7 @@ function applyUp(id) {
   G.up[id] = (G.up[id] || 0) + 1; recompute();
   if (id === 'hp') p.hp = Math.min(p.maxHp, p.hp + 25);
   if (id === 'squad') { syncSquad(); say('squad'); }
+  if (id === 'medic' && !G.medic) { spawnMedic(); say('medic'); }
   if (id === 'drone') syncDrones();
   if (id === 'shield') { p.shieldOn = true; }
 }
@@ -1507,7 +1512,7 @@ function updateIntro(dt) {
   else if (t < 1.6) { s.x = 0; s.alt = HOVER + Math.sin(t * 6) * 1.5; s.hatch = clamp((t - 1.2) / 0.3, 0, 1); s.tilt = 0; s.thrust = 0; }
   else if (t < 2.05) { p.visible = true; const k = (t - 1.6) / 0.45; p.lift = (HOVER - 26) * (1 - k * k); s.alt = HOVER + Math.sin(t * 6) * 1.5; }
   else if (t < 2.6) {
-    if (!g.landed) { g.landed = true; p.lift = 0; dust(p.x, p.y, 12); shake(5); SFX.land(); say('land'); syncSquad(); spawnMedic(); }
+    if (!g.landed) { g.landed = true; p.lift = 0; dust(p.x, p.y, 12); shake(5); SFX.land(); say('land'); syncSquad(); }
     s.hatch = clamp(1 - (t - 2.15) / 0.3, 0, 1); s.alt = HOVER + Math.sin(t * 6) * 1.5;
   } else if (t < 3.5) { const k = ei((t - 2.6) / 0.9); s.x = lerp(0, -280, k); s.alt = lerp(HOVER, 380, k); s.tilt = lerp(0, 0.14, k); s.thrust = k; s.hatch = 0; }
   else { s.show = false; g.state = 'play'; startRound(1); }
@@ -1634,7 +1639,6 @@ function updateSkills(dt) {
   }
   // 연쇄 폭발 (조금 늦게 터져서 줄줄이 번진다)
   for (let i = g.booms.length - 1; i >= 0; i--) { const q = g.booms[i]; q.t -= dt; if (q.t <= 0) { g.booms.splice(i, 1); explode(q.x, q.y, 44, q.dmg, '#c77dff'); } }
-  // 야전 위생병
   // 지뢰
   if (u.mine) {
     g.tMine -= dt;
@@ -1905,7 +1909,6 @@ function renderLobby(c) {
   drawShip(c, -50, -24 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
   const n = save.meta.squad || 0;
   for (let i = 0; i < n; i++) drawMarine(c, 72 + i * 22, 12 + i * 20, { dir: 1, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
-  drawMedic(c, { x: -36, y: 32, dir: 1, idle: T * 3 + 1 }, 1.45);
   drawMarine(c, 26, 46, { dir: 1, idle: T * 3, s: 1.9 });
   c.restore();
 }
