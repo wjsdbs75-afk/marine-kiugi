@@ -53,8 +53,4 @@
 
 저장소에 처음 올린 뒤 한 번씩 확인한다. `gh` 로 할 수 있으면 직접 하고, 권한이 없으면 사용자에게 그 한 가지만 부탁한다.
 
-- [ ] Pages Source 가 "GitHub Actions" 인가 (`gh api repos/{owner}/{repo}/pages`). 아니면 Settings → Pages 에서 바꿔야 한다.
-- [ ] "게임 배포 (GitHub Pages)" 워크플로가 성공했고 `version.json` 이 열리는가.
-- [ ] Secrets 에 `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD` 가 있는가 (`gh secret list`). 없으면 사용자가 보관 중인 키 파일로 넣는다 (`gh secret set`).
-- [ ] "안드로이드 APK 빌드" 가 성공해서 Releases 의 `apk` 에 `marine-kiugi.apk` 가 올라갔는가. 첫 빌드라 실패할 수 있으니 로그를 보고 고친다.
 - [ ] 사용자가 실제 기기에서 확인: 설치, 뒤로 가기, 비행기 모드에서 다시 켜기, 게임을 고쳐 올린 뒤 껐다 켜면 새 버전이 뜨는지.
