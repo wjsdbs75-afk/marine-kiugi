@@ -44,6 +44,8 @@
 
 ## 그 밖에
 
+- **외부 유료 도구(Creative Claw 이미지·음성 생성, 배경 지우기 등)를 쓸 때는 반드시 사용자에게 알린다.** 쓰기 전에 무엇을 몇 장 만들지, 쓴 뒤에는 사용한 크레딧과 남은 크레딧을 보고한다.
+
 - Pages 는 "GitHub Actions" 방식으로 배포한다 (Settings → Pages → Source).
 - 안드로이드 빌드는 이 저장소의 Actions 에서만 한다. Gradle 8.10.2 (워크플로의 setup-gradle 이 설치, 저장소에 gradlew 는 없음) + AGP 8.7.3, JDK 17, 외부 라이브러리 없음.
 - 공개 배포하는 앱이다. 서명 키는 저장소에 넣지 않고 Actions Secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`) 에만 둔다. 키 파일이나 비밀번호를 커밋하지 말 것. 키를 바꾸면 기존 앱 위에 덮어 설치가 안 되어 사용자들의 게임 저장이 날아가니 바꾸지 말 것.
