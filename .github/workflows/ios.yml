@@ -69,22 +69,20 @@ jobs:
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build | tail -40
 
-      - name: 아카이브 (서명)
+      # 아카이브는 서명 없이 만든다. 자동 서명으로 아카이브하면 개발용 프로파일(등록된 기기 필요)을 찾다가 실패한다.
+      # 배포용 인증서·App Store 프로파일은 다음 단계(내보내기)에서 API 키로 만들어 서명한다.
+      - name: 아카이브
         if: env.SIGN == '1'
         working-directory: ios
         env:
-          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-          ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
           TEAM: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -o pipefail
           xcodebuild -project MarineKiugi.xcodeproj -scheme MarineKiugi -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/MarineKiugi.xcarchive" \
-            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_$KEY_ID.p8" \
-            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
-            archive | tail -60
+            DEVELOPMENT_TEAM="$TEAM" CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            archive | tail -40
 
       - name: TestFlight 에 올리기
         if: env.SIGN == '1'
