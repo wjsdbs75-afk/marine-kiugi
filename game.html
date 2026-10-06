@@ -203,32 +203,44 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 /* ---- HUD */
 #hud { position: absolute; inset: var(--st) 0 var(--sb) 0; pointer-events: none; }
 #hud button { pointer-events: auto; }
-#xpbar { position: relative; width: 100%; height: .95em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .14em 0 var(--ink); }   /* 체력 바 바로 아래의 경험치 바 */
+#xpbar { position: relative; width: 100%; height: .85em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .14em 0 var(--ink); }   /* 체력 바 바로 아래의 경험치 바 */
 #xpbar i { display: block; height: 100%; width: 0; background: var(--energy); border-radius: .16em; }
-.hud-top { position: absolute; left: 3.4em; right: 3.4em; top: .55em; display: flex; flex-direction: column; align-items: center; gap: .3em; pointer-events: none; }
-.hud-top b { font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--fg); white-space: nowrap; }
-.hud-pause { position: absolute; right: .6em; top: .75em; }
-.hud-row { position: absolute; left: .6em; right: .6em; top: 3.4em; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: .5em; }
-.hud-left { display: flex; align-items: center; gap: .45em; max-width: 15.5em; padding: .3em .5em .3em .3em; background: rgba(10, 15, 28, .55); border: .13em solid var(--ink); border-radius: .7em; }
-.hud-bars { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: .3em; }
 #xpbar span { position: absolute; inset: 0; display: flex; align-items: center; padding-left: .5em; font-family: var(--font-display); font-weight: 400; font-size: .66em; color: #fff; white-space: nowrap; }
-.lv-badge { position: relative; flex: 0 0 auto; width: 2.75em; height: 2.75em; display: grid; place-items: center; pointer-events: none; }
-.lv-badge canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .55)); }
-.lv-badge b { position: relative; margin-top: .55em; font-family: var(--font-display); font-weight: 400; font-size: 1em; color: #fff; font-variant-numeric: tabular-nums; }
-.lv-badge.max b { font-size: .72em; color: var(--hazard); margin-top: .75em; }
-.hud-right { display: flex; flex-direction: column; justify-content: space-between; gap: .3em; align-items: stretch; }
-.hud-right .chip { justify-content: flex-end; min-width: 4.6em; }
-#hpbar { position: relative; width: 100%; height: 1.2em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .16em 0 var(--ink); }
+/* 전투 HUD: 위쪽 한 줄, 모듈 사이 간격은 모두 --hg 로 같게 */
+.hud-strip { --hg: .28em; position: absolute; left: .4em; right: .4em; top: .45em; display: flex; align-items: stretch; gap: var(--hg); height: 3.25em; }
+.hmod { position: relative; display: flex; align-items: center; min-width: 0; padding: .3em .4em; border: .14em solid var(--ink); border-radius: .55em;
+  background: linear-gradient(180deg, #34456b 0%, #24314f 46%, #1a2440 100%); box-shadow: inset 0 .1em 0 rgba(255, 255, 255, .16), inset 0 -.12em 0 rgba(0, 0, 0, .35), 0 .16em 0 var(--ink); }
+.hmod::before, .hmod::after { content: ''; position: absolute; width: .6em; height: .6em; border: .17em solid var(--hazard); pointer-events: none; z-index: 1; }
+.hmod::before { left: -.14em; top: -.14em; border-right: 0; border-bottom: 0; border-top-left-radius: .55em; }
+.hmod::after { right: -.14em; bottom: -.14em; border-left: 0; border-top: 0; border-bottom-right-radius: .55em; }
+.hm-me { flex: 1 1 0; gap: .35em; padding-left: .25em; }
+.hud-bars { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: .22em; }
+.hm-stage { flex: 0 0 auto; flex-direction: column; justify-content: center; gap: .3em; padding: .25em .45em; }
+.hm-stage b { font-family: var(--font-display); font-weight: 400; font-size: .82em; line-height: 1; color: var(--fg); white-space: nowrap; }
+.hm-res { flex: 0 0 auto; flex-direction: column; align-items: stretch; justify-content: center; gap: .18em; padding: .25em .35em; }
+.res { display: flex; align-items: center; gap: .3em; height: 1.18em; padding: 0 .4em 0 .2em; background: rgba(5, 7, 15, .55); border-radius: .35em; }
+.res .coin-dot, .res .ico-kill { width: 1em; height: 1em; flex: none; }
+.res b { flex: 1 1 auto; min-width: 2.1em; text-align: right; font-family: var(--font-display); font-weight: 400; font-size: .8em; color: var(--fg); font-variant-numeric: tabular-nums; }
+.hm-pause { flex: 0 0 auto; width: 2.45em; justify-content: center; padding: 0; color: var(--fg); cursor: pointer; font: inherit; }
+.hm-pause svg { width: 1.35em; height: 1.35em; filter: drop-shadow(0 .08em 0 var(--ink)); }
+.hm-pause:active { transform: translateY(.1em); box-shadow: inset 0 .1em 0 rgba(255, 255, 255, .16), 0 .06em 0 var(--ink); }
+#game:has(#hud:not([hidden])) #ver { display: none; }     /* 전투 중에는 구석 버전 표시를 숨긴다 (일시정지 버튼과 겹침) */
+.lv-badge { position: relative; flex: 0 0 auto; width: 2.45em; height: 2.45em; display: grid; place-items: center; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2b3a5e, #121a30 70%); border: .16em solid var(--hazard); box-shadow: 0 0 0 .12em var(--ink), inset 0 .12em .2em rgba(0, 0, 0, .5); }
+.lv-badge canvas { position: absolute; left: 12%; top: 4%; width: 76%; height: 76%; filter: drop-shadow(0 .08em 0 rgba(0, 0, 0, .55)); }
+.lv-badge b { position: absolute; bottom: -.3em; left: 50%; transform: translateX(-50%); min-width: 1.5em; padding: 0 .25em; text-align: center; line-height: 1.2; background: var(--ink); border-radius: .5em; margin: 0; font-family: var(--font-display); font-weight: 400; font-size: .78em; color: #fff; font-variant-numeric: tabular-nums; }
+.lv-badge.max b { font-size: .68em; color: var(--hazard); }
+#hpbar { position: relative; width: 100%; height: 1.15em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .16em 0 var(--ink); }
 #hpbar i { display: block; height: 100%; width: 100%; background: var(--heal); border-radius: .2em; }
 #hpbar.low i { background: var(--danger); }
 #hpbar span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 400; font-size: .7em; color: #fff; text-shadow: 0 .08em 0 var(--ink), 0 -.08em 0 var(--ink), .08em 0 0 var(--ink), -.08em 0 0 var(--ink); font-variant-numeric: tabular-nums; }
-#pips { display: flex; gap: .2em; align-items: center; justify-content: center; }
-.pip { width: .5em; height: .5em; flex: none; border-radius: .12em; border: .1em solid var(--ink); background: rgba(234, 240, 255, .45); }
+#pips { display: flex; gap: .14em; align-items: center; justify-content: center; }
+.pip { width: .4em; height: .4em; flex: none; border-radius: 50%; border: .1em solid var(--ink); background: rgba(234, 240, 255, .45); }
 .pip.done { background: var(--hazard); }
 .pip.now { background: #fff; transform: scale(1.3); }
-.pip:last-child { transform: rotate(45deg); }
+.pip:last-child { border-radius: .08em; transform: rotate(45deg); }
 .pip:last-child.now { background: var(--danger); transform: rotate(45deg) scale(1.3); }
-#bossbar { position: absolute; left: 12%; right: 12%; top: 7.3em; display: flex; flex-direction: column; align-items: center; gap: .15em; }
+#bossbar { position: absolute; left: 12%; right: 12%; top: 4.4em; display: flex; flex-direction: column; align-items: center; gap: .15em; }
 #bossbar b { font-family: var(--font-display); font-weight: 400; font-size: .95em; color: #fff; }
 #bossbar div { width: 100%; height: .85em; background: var(--ink); border: .13em solid var(--ink); border-radius: .3em; overflow: hidden; }
 #bossbar i { display: block; height: 100%; background: var(--danger); border-radius: .15em; }
@@ -390,20 +402,20 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
     </section>
 
     <div id="hud" hidden>
-      <div class="hud-top"><b id="stageLbl" class="outline">STAGE 1</b><div id="pips"></div></div>
-      <button id="btnPause" class="btn sq hud-pause" type="button" aria-label="일시정지"><svg viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z" fill="currentColor"/></svg></button>
-      <div class="hud-row">
-        <div class="hud-left">
+      <div class="hud-strip">
+        <div class="hmod hm-me">
           <div class="lv-badge" id="lvBadge" aria-label="레벨 1"><canvas id="lvHelm" width="96" height="96" aria-hidden="true"></canvas><b id="lvNum" class="outline">1</b></div>
           <div class="hud-bars">
             <div id="hpbar"><i id="hpFill"></i><span id="hpTxt">100</span></div>
             <div id="xpbar" aria-label="경험치"><i id="xpFill"></i><span id="xpTxt" class="outline">이병</span></div>
           </div>
         </div>
-        <div class="hud-right">
-          <div class="chip mini"><span class="coin-dot"></span><b id="hudCoins">0</b></div>
-          <div class="chip mini"><b id="hudKills">0</b>&nbsp;처치</div>
+        <div class="hmod hm-stage"><b id="stageLbl" class="outline">STAGE 1</b><div id="pips"></div></div>
+        <div class="hmod hm-res">
+          <div class="res"><span class="coin-dot"></span><b id="hudCoins">0</b></div>
+          <div class="res" aria-label="처치"><svg class="ico-kill" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-5 0-8.5 3.4-8.5 8 0 2.6 1.2 4.6 3 5.9V19c0 1 .8 1.8 1.8 1.8h7.4c1 0 1.8-.8 1.8-1.8v-2.6c1.8-1.3 3-3.3 3-5.9 0-4.6-3.5-8-8.5-8z" fill="#eef2ff" stroke="#0a0f1c" stroke-width="1.6"/><circle cx="8.7" cy="11.3" r="2.3" fill="#0a0f1c"/><circle cx="15.3" cy="11.3" r="2.3" fill="#0a0f1c"/><path d="M12 13.6l-1.3 2.4h2.6z" fill="#0a0f1c"/><path d="M10 18v2.2M12 18v2.2M14 18v2.2" stroke="#0a0f1c" stroke-width="1.2"/></svg><b id="hudKills">0</b></div>
         </div>
+        <button id="btnPause" class="hmod hm-pause" type="button" aria-label="일시정지"><svg viewBox="0 0 24 24"><path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z" fill="currentColor"/></svg></button>
       </div>
       <div id="bossbar" hidden><b id="bossName" class="outline"></b><div><i id="bossFill"></i></div></div>
       <div class="hud-side">
@@ -494,7 +506,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.41', VERSION_DATE = '2026.10.06', VERSION_NOTE = '전투 HUD 정리: 헬멧 레벨과 체력·경험치 바를 한 패널로';   // 게시할 때마다 올린다
+const VERSION = 'v0.42', VERSION_DATE = '2026.10.06', VERSION_NOTE = '전투 HUD 새 디자인: 위쪽 한 줄에 모듈 4개, 간격 통일';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2371,7 +2383,7 @@ function updateHud() {
   const lvKey = g.level + (ATLAS.ready ? 'r' : '');
   if (cache.lv !== lvKey) {
     cache.lv = lvKey; setTxt('lvNum', lvMax ? 'MAX' : String(g.level)); el('lvBadge').classList.toggle('max', lvMax);
-    el('lvBadge').setAttribute('aria-label', lvMax ? '레벨 MAX' : `레벨 ${g.level}`); setTxt('xpTxt', `Lv.${g.level} ${rankOf(g.level)}` + (lvMax ? ' · 보급' : ''));
+    el('lvBadge').setAttribute('aria-label', lvMax ? '레벨 MAX' : `레벨 ${g.level}`); setTxt('xpTxt', rankOf(g.level) + (lvMax ? ' · 보급' : ''));
     const hc = el('lvHelm').getContext('2d'); hc.clearRect(0, 0, 96, 96); sprC(hc, 'i_squad', 48, 48, 94, lvMax ? { v: 'hue-160' } : null);
   }
   setStyle('hpFill', 'width', (clamp(p.hp / p.maxHp, 0, 1) * 100).toFixed(1) + '%');
