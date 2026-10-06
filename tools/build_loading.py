@@ -30,6 +30,15 @@ FONTS = {   # Google Fonts 원본 (SIL Open Font License)
 APP_TEXTS = ["보급품 확인 중", "새 버전을 받는 중", "게임을 받는 중", "강하 준비 중"]
 
 
+def helm() -> str:
+    """게임 로딩 화면의 헬멧 그림 (game.html 의 #bootHelm) 을 그대로 쓴다."""
+    game = (ROOT / "game.html").read_text(encoding="utf-8")
+    m = re.search(r'<img id="bootHelm"[^>]*\bsrc="([^"]+)"', game)
+    if not m:
+        raise SystemExit("game.html 에서 #bootHelm 그림을 찾지 못했습니다.")
+    return m.group(1)
+
+
 def tips() -> list:
     game = (ROOT / "game.html").read_text(encoding="utf-8")
     m = re.search(r"const TIPS = \[(.*?)\];", game, re.S)
@@ -61,7 +70,8 @@ def main() -> int:
     text = "".join(sorted(c for c in chars if c.isprintable()))
     page = (src.replace("{{FONT_DISPLAY}}", woff2(FONTS["display"], text))
                .replace("{{FONT_BODY}}", woff2(FONTS["body"], text))
-               .replace("{{TIPS}}", json.dumps(tip_list, ensure_ascii=False)))
+               .replace("{{TIPS}}", json.dumps(tip_list, ensure_ascii=False))
+               .replace("{{HELM}}", helm()))
     for out in OUTS:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(page, encoding="utf-8")

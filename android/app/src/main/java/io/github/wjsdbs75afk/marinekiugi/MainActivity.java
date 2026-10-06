@@ -73,7 +73,9 @@ public class MainActivity extends Activity {
     private WebView web;
     private WebView loadWeb;              // 확인·받는 동안 띄우는 화면 (assets/loading.html, 게임 안의 로딩 화면과 같은 모양)
     private String loadText = "";         // 로딩 화면에 마지막으로 보낸 글자와 비율 (화면이 늦게 뜨면 다시 보낸다)
-    private float loadFrac = 0f;
+    private volatile float loadFrac = 0f;
+    /** 받는 동안 앱 로딩 화면의 막대는 여기까지만 채운다. 나머지는 게임의 로딩 화면이 이어서 채운다. */
+    private static final float APP_SHARE = 0.6f;
     private long loadSentAt;
     private LinearLayout errorView;
     private TextView errorDetail;
@@ -313,7 +315,7 @@ public class MainActivity extends Activity {
                             return;
                         }
                         loadSentAt = now;
-                        final float f = Math.min(1f, got / (float) size);
+                        final float f = Math.min(1f, got / (float) size) * APP_SHARE;
                         runOnUiThread(() -> {
                             if (seq == startSeq) {
                                 showLoading(label, f);
@@ -331,6 +333,9 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (file.isFile()) {
+                    if (loadFrac > 0f) {
+                        showLoading(getString(R.string.loading_ready), APP_SHARE);   // 게임의 로딩 화면과 같은 글자로 넘겨준다
+                    }
                     web.loadUrl(GAME_URL);   // Client.shouldInterceptRequest 가 저장해 둔 사본을 내준다
                 } else {
                     showError(detail);
@@ -643,6 +648,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String appVersion() {
             return "안드로이드 " + BuildConfig.VERSION_NAME;
+        }
+
+        /** 앱 로딩 화면이 채워 둔 막대 (0~1). 게임의 로딩 화면이 여기서부터 이어서 채운다. */
+        @JavascriptInterface
+        public float bootFrac() {
+            return loadFrac;
         }
 
         @JavascriptInterface

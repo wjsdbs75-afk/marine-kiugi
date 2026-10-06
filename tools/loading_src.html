@@ -36,7 +36,7 @@ p, h1 { margin: 0; }
 #boot::before { top: var(--st); }
 #boot::after { bottom: var(--sb); }
 .boot-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8em; }
-.boot-helm { width: 7em; height: 7em; }
+.boot-helm { width: 7em; height: 7em; padding: .2em; box-sizing: border-box; object-fit: contain; filter: drop-shadow(0 .3em 0 rgba(0, 0, 0, .5)); }
 .boot-low { display: flex; flex-direction: column; align-items: stretch; gap: .55em; }
 .boot-txt { text-align: center; font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--fg); }
 .boot-bar { position: relative; height: 1.25em; background: var(--ink); border: .14em solid var(--ink); border-radius: .5em; overflow: hidden; box-shadow: 0 .18em 0 #000; }
@@ -59,7 +59,7 @@ p, h1 { margin: 0; }
   <div id="game">
     <div id="boot">
       <div class="boot-mid">
-        <div class="boot-helm"></div>
+        <img class="boot-helm" alt="" src="{{HELM}}">
         <h1 class="logo v2"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span><span class="l3 outline">서바이벌</span></h1>
       </div>
       <div class="boot-low">
@@ -86,9 +86,11 @@ p, h1 { margin: 0; }
     game.style.setProperty('--sb', Math.max(0, (parseFloat(ps.paddingBottom) || 0) - gap) + 'px');
   }
   addEventListener('resize', resize); resize();
-  var tipEl = document.getElementById('tip'), tipI = Math.floor(Math.random() * TIPS.length);
-  tipEl.textContent = TIPS[tipI];
-  setInterval(function () { tipEl.style.opacity = 0; setTimeout(function () { tipI = (tipI + 1) % TIPS.length; tipEl.textContent = TIPS[tipI]; tipEl.style.opacity = 1; }, 300); }, 3200);
+  // 작전 팁: 시계에 맞춰 3.2초마다 바뀐다 (게임의 로딩 화면과 같은 식이라 넘어갈 때 같은 팁이 이어진다)
+  var tipEl = document.getElementById('tip'), TIP_MS = 3200;
+  function tipNow() { return TIPS[Math.floor(Date.now() / TIP_MS) % TIPS.length]; }
+  tipEl.textContent = tipNow();
+  (function next() { setTimeout(function () { tipEl.style.opacity = 0; setTimeout(function () { tipEl.textContent = tipNow(); tipEl.style.opacity = 1; }, 300); next(); }, TIP_MS - (Date.now() + 300) % TIP_MS); })();
   // 앱이 부른다: mkLoad('새 버전을 받는 중', 0.42). 비율을 모르면 생략
   window.mkLoad = function (text, frac) {
     if (text) document.getElementById('txt').textContent = text;

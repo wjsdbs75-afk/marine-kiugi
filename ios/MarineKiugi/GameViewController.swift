@@ -23,6 +23,8 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     private var loadWeb: WKWebView!          // 확인·받는 동안 띄우는 화면 (loading.html, 게임 안의 로딩 화면과 같은 모양)
     private var loadText = ""                // 로딩 화면에 마지막으로 보낸 글자와 비율 (화면이 늦게 뜨면 다시 보낸다)
     private var loadFrac = 0.0
+    /// 받는 동안 앱 로딩 화면의 막대는 여기까지만 채운다. 나머지는 게임의 로딩 화면이 이어서 채운다.
+    private static let appShare = 0.6
     private let errorView = UIStackView()
     private let errorDetail = UILabel()
     private var startSeq = 0
@@ -194,7 +196,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
                 }
                 problem = await Self.download(gameURL, to: file) { got in
                     guard size > 0 else { return }
-                    let f = min(1, Double(got) / Double(size))
+                    let f = min(1, Double(got) / Double(size)) * Self.appShare
                     Task { @MainActor in
                         if self?.startSeq == seq { self?.showLoading(label, f) }
                     }
@@ -205,7 +207,11 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
             await MainActor.run {
                 guard let self, seq == self.startSeq else { return }
                 if let html {
-                    self.web.loadHTMLString(html, baseURL: self.gameURL)
+                    if self.loadFrac > 0 { self.showLoading("강하 준비 중", Self.appShare) }   // 게임의 로딩 화면과 같은 글자로 넘겨준다
+                    // 게임의 로딩 화면이 앱 로딩 화면의 막대에서 이어서 채우도록 비율을 알려 준다
+                    let boot = "<script>window.MKBoot={frac:\(String(format: "%.4f", self.loadFrac))};</script>"
+                    let page = html.range(of: "<head>").map { html.replacingCharacters(in: $0, with: "<head>" + boot) } ?? html
+                    self.web.loadHTMLString(page, baseURL: self.gameURL)
                 } else {
                     self.showError(problem)
                 }

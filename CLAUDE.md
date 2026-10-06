@@ -29,7 +29,9 @@
 6. **저장소 반영.** `game.html` 을 커밋해서 `main` 에 push. `pages.yml` 이 1~2분 안에 배포한다. `version.json` 의 `version` 이 새 값이면 반영된 것이다.
 7. 사용자에게 "앱을 완전히 껐다 켜면 새 버전이 뜬다"고 알려 준다. APK 를 다시 빌드할 필요는 없다.
 
-앱이 게임을 확인하고 받는 동안 띄우는 화면은 앱 안에 든 `loading.html` 이다 (게임 안의 로딩 화면 `#boot` 과 같은 모양이라 넘어갈 때 티가 안 난다). 원본은 `tools/loading_src.html`, `python3 tools/build_loading.py` 가 글꼴을 잘라 넣어 `android/app/src/main/assets/` 와 `ios/MarineKiugi/` 에 쓴다. 게임의 로딩 화면 모양이나 작전 팁(`TIPS`)을 바꾸면 이것도 다시 만들어 커밋한다 (앱 빌드가 다시 돈다). 받는 동안 막대는 `version.json` 의 `size` 로 채운다.
+앱이 게임을 확인하고 받는 동안 띄우는 화면은 앱 안에 든 `loading.html` 이다 (게임 안의 로딩 화면 `#boot` 과 같은 모양이라 넘어갈 때 티가 안 난다). 원본은 `tools/loading_src.html`, `python3 tools/build_loading.py` 가 글꼴을 잘라 넣어 `android/app/src/main/assets/` 와 `ios/MarineKiugi/` 에 쓴다. 게임의 로딩 화면 모양이나 작전 팁(`TIPS`), 헬멧 그림(`#bootHelm`)을 바꾸면 이것도 다시 만들어 커밋한다 (앱 빌드가 다시 돈다). 받는 동안 앱은 막대를 60% 까지만 채우고 그 값을 넘겨준다 (안드로이드 `MKShell.bootFrac()`, 아이폰 `window.MKBoot.frac`). 게임의 `#boot` 가 거기서 이어 채운다. 작전 팁은 두 화면 모두 시계(3.2초)에 맞춰 바뀐다.
+
+글꼴은 Google Fonts 에만 기대지 않고 `game.html` 안의 `<style id="mkFonts">` 에 게임에 쓰인 글자만 잘라 넣어 둔다 ('MK Display', 'MK Body'). 새 글자(대사·이름 등)를 넣었으면 `python3 tools/embed_fonts.py` 를 돌린다 (안 돌려도 빠진 글자만 Google Fonts 로 보인다).
 
 `android/` 를 고쳤을 때만 `android.yml` 이 APK 를 다시 빌드해 Releases 의 `apk` 에 올린다. `ios/` 를 고쳤을 때만 `ios.yml` 이 아이폰 앱을 빌드해 TestFlight 에 올린다 (게임만 고쳤을 때는 둘 다 필요 없다).
 
