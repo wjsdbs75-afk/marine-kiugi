@@ -63,6 +63,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(HEAD.format(title=title) + game + TAIL, encoding="utf-8")
     info = {
+        "size": (out / "index.html").stat().st_size,   # 앱이 받는 동안 막대를 채우는 데 쓴다
         "version": const("VERSION"),
         "date": const("VERSION_DATE"),
         "note": const("VERSION_NOTE"),

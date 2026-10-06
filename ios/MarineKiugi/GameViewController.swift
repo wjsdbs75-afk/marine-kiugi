@@ -20,8 +20,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     }()
 
     private var web: WKWebView!
-    private let loadingView = UIStackView()
-    private let loadingText = UILabel()
+    private var loadWeb: WKWebView!          // 확인·받는 동안 띄우는 화면 (loading.html, 게임 안의 로딩 화면과 같은 모양)
+    private var loadText = ""                // 로딩 화면에 마지막으로 보낸 글자와 비율 (화면이 늦게 뜨면 다시 보낸다)
+    private var loadFrac = 0.0
     private let errorView = UIStackView()
     private let errorDetail = UILabel()
     private var startSeq = 0
@@ -36,6 +37,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         super.viewDidLoad()
         view.backgroundColor = Self.night
         makeWebView()
+        makeLoadingView()
         makeOverlays()
         start()
     }
@@ -70,18 +72,55 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         web = w
     }
 
-    private func makeOverlays() {
-        let spinner = UIActivityIndicatorView(style: .large)
-        spinner.color = UIColor(red: 1, green: 0.76, blue: 0.12, alpha: 1)
-        spinner.startAnimating()
-        loadingText.textColor = UIColor(red: 0.66, green: 0.71, blue: 0.84, alpha: 1)
-        loadingText.font = .systemFont(ofSize: 15, weight: .semibold)
-        loadingView.axis = .vertical
-        loadingView.alignment = .center
-        loadingView.spacing = 14
-        loadingView.addArrangedSubview(spinner)
-        loadingView.addArrangedSubview(loadingText)
+    private func makeLoadingView() {
+        let cfg = WKWebViewConfiguration()
+        cfg.websiteDataStore = .nonPersistent()
+        let w = WKWebView(frame: view.bounds, configuration: cfg)
+        w.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        w.navigationDelegate = self
+        w.isOpaque = false
+        w.backgroundColor = Self.night
+        w.scrollView.backgroundColor = Self.night
+        w.scrollView.isScrollEnabled = false
+        w.scrollView.bounces = false
+        w.scrollView.minimumZoomScale = 1
+        w.scrollView.maximumZoomScale = 1
+        w.scrollView.pinchGestureRecognizer?.isEnabled = false
+        w.scrollView.contentInsetAdjustmentBehavior = .never   // 노치·홈 막대 여백은 페이지가 env(safe-area-inset-*) 로 민다
+        w.allowsLinkPreview = false
+        if let url = Bundle.main.url(forResource: "loading", withExtension: "html"),
+           let html = try? String(contentsOf: url, encoding: .utf8) {
+            w.loadHTMLString(html, baseURL: nil)
+        }
+        view.addSubview(w)
+        loadWeb = w
+    }
 
+    /// 로딩 화면을 보이고 글자와 막대를 바꾼다.
+    private func showLoading(_ text: String, _ frac: Double) {
+        loadText = text
+        loadFrac = frac
+        loadWeb.layer.removeAllAnimations()
+        loadWeb.alpha = 1
+        loadWeb.isHidden = false
+        sendLoading()
+    }
+
+    private func sendLoading() {
+        let q = (try? JSONSerialization.data(withJSONObject: [loadText], options: []))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "[\"\"]"
+        loadWeb.evaluateJavaScript("window.mkLoad&&mkLoad(\(q)[0],\(String(format: "%.4f", loadFrac)))", completionHandler: nil)
+    }
+
+    /// 게임이 떴다: 로딩 화면을 걷어 낸다. 밑에서 게임의 로딩 화면이 같은 모양으로 이어진다.
+    private func hideLoading() {
+        guard !loadWeb.isHidden else { return }
+        UIView.animate(withDuration: 0.2, animations: { self.loadWeb.alpha = 0 }) { done in
+            if done { self.loadWeb.isHidden = true }
+        }
+    }
+
+    private func makeOverlays() {
         let title = UILabel()
         title.text = "게임을 불러오지 못했어요"
         title.textColor = UIColor(red: 0.92, green: 0.94, blue: 1, alpha: 1)
@@ -106,7 +145,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         errorView.addArrangedSubview(retry)
         errorView.isHidden = true
 
-        for v in [loadingView, errorView] {
+        for v in [errorView] {
             v.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(v)
             NSLayoutConstraint.activate([
@@ -121,7 +160,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     @objc private func retryTapped() { start() }
 
     private func showError(_ detail: String?) {
-        loadingView.isHidden = true
+        loadWeb.isHidden = true
         web.isHidden = true
         errorDetail.text = detail ?? ""
         errorView.isHidden = false
@@ -133,8 +172,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         startSeq += 1
         let seq = startSeq
         errorView.isHidden = true
-        loadingText.text = ""
-        loadingView.isHidden = false
+        showLoading("보급품 확인 중", 0)
         web.isHidden = true
         let file = gameFile, gameURL = self.gameURL
         Task.detached { [weak self] in
@@ -144,10 +182,18 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
             if site == nil {
                 problem = "인터넷 연결을 확인한 뒤 다시 시도해 주세요."
             } else if !have || site!.isEmpty || site != UserDefaults.standard.string(forKey: Self.siteVersionKey) {
+                let label = have ? "새 버전을 받는 중" : "게임을 받는 중"
+                let size = Self.siteSize(site!)   // 받을 페이지 크기 (모르면 0)
                 await MainActor.run {
-                    if self?.startSeq == seq { self?.loadingText.text = have ? "새 버전을 받는 중…" : "게임을 받는 중…" }
+                    if self?.startSeq == seq { self?.showLoading(label, 0) }
                 }
-                problem = await Self.download(gameURL, to: file)
+                problem = await Self.download(gameURL, to: file) { got in
+                    guard size > 0 else { return }
+                    let f = min(1, Double(got) / Double(size))
+                    Task { @MainActor in
+                        if self?.startSeq == seq { self?.showLoading(label, f) }
+                    }
+                }
                 if problem == nil { UserDefaults.standard.set(site, forKey: Self.siteVersionKey) }
             }
             let html = try? String(contentsOf: file, encoding: .utf8)
@@ -183,12 +229,20 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         }
     }
 
+    /// version.json 의 size (게임 페이지 바이트 수). 없거나 읽지 못하면 0.
+    nonisolated private static func siteSize(_ site: String) -> Int {
+        guard let d = site.data(using: .utf8),
+              let o = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any] else { return 0 }
+        return (o["size"] as? NSNumber)?.intValue ?? 0
+    }
+
     /// 게임 페이지를 받아 저장한다. 다 받아 온전한지 확인한 뒤에만 바꿔 쓰므로 실패해도 기존 사본은 그대로다.
-    private static func download(_ base: URL, to dest: URL) async -> String? {
+    /// progress 는 지금까지 받은 바이트 수로 가끔 불린다 (받는 스레드에서).
+    private static func download(_ base: URL, to dest: URL, progress: @escaping (Int) -> Void) async -> String? {
         let ms = Int(Date().timeIntervalSince1970 * 1000)
         guard let url = URL(string: "?t=\(ms)", relativeTo: base) else { return "주소가 잘못되었습니다." }
         do {
-            let (data, resp) = try await session(20).data(from: url)
+            let (data, resp) = try await Fetcher(progress: progress).fetch(url, timeout: 20)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             guard code == 200 else { return "\(base.absoluteString)\nHTTP \(code)" }
             let tail = String(decoding: data.suffix(64), as: UTF8.self).lowercased()
@@ -203,11 +257,12 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     // ------------------------------------------------------------------ 웹 화면
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if webView === loadWeb { sendLoading(); return }
         let seq = startSeq
         webView.evaluateJavaScript("typeof window.__mkBack === 'function'") { [weak self] value, _ in
             guard let self, seq == self.startSeq else { return }
-            self.loadingView.isHidden = true
             self.web.isHidden = false
+            self.hideLoading()
             if (value as? Bool) != true {
                 // 게임이 아닌 것이 떴다. 다음에 켤 때 다시 받도록 "받았다"는 표시를 지운다
                 UserDefaults.standard.removeObject(forKey: Self.siteVersionKey)
@@ -216,11 +271,16 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if webView === loadWeb { return }
         showError(error.localizedDescription)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if webView === loadWeb {   // 로딩 화면에서는 어디로도 가지 않는다
+            decisionHandler(action.navigationType == .other ? .allow : .cancel)
+            return
+        }
         // 게임 밖으로 나가는 링크는 사파리로 넘긴다
         if action.navigationType == .linkActivated, let url = action.request.url, url.host != gameURL.host {
             UIApplication.shared.open(url)
@@ -231,6 +291,7 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        if webView === loadWeb { webView.reload(); return }
         // 메모리가 모자라 웹 화면이 죽은 경우: 다시 띄운다. 켜자마자 또 죽으면 오류 화면에서 멈춘다
         let now = Date()
         if let last = lastCrashAt, now.timeIntervalSince(last) < 15 {
@@ -239,5 +300,54 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
             start()
         }
         lastCrashAt = now
+    }
+}
+
+/// 받는 동안 받은 양을 알려 주는 내려받기. URLSession 의 async data(from:) 는 진행률을 주지 않아 대리자로 받는다.
+private final class Fetcher: NSObject, URLSessionDataDelegate {
+    private let progress: (Int) -> Void
+    private var data = Data()
+    private var response: URLResponse?
+    private var lastSent = Date.distantPast
+    private var cont: CheckedContinuation<(Data, URLResponse?), Error>?
+
+    init(progress: @escaping (Int) -> Void) { self.progress = progress }
+
+    func fetch(_ url: URL, timeout: TimeInterval) async throws -> (Data, URLResponse?) {
+        let c = URLSessionConfiguration.ephemeral
+        c.requestCachePolicy = .reloadIgnoringLocalCacheData
+        c.timeoutIntervalForRequest = timeout
+        c.timeoutIntervalForResource = timeout * 3
+        let q = OperationQueue()
+        q.maxConcurrentOperationCount = 1
+        let session = URLSession(configuration: c, delegate: self, delegateQueue: q)
+        defer { session.finishTasksAndInvalidate() }
+        return try await withCheckedThrowingContinuation { k in
+            q.addOperation {
+                self.cont = k
+                session.dataTask(with: url).resume()
+            }
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        self.response = response
+        completionHandler(.allow)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive chunk: Data) {
+        data.append(chunk)
+        let now = Date()
+        if now.timeIntervalSince(lastSent) > 0.08 {
+            lastSent = now
+            progress(data.count)
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        progress(data.count)
+        if let error { cont?.resume(throwing: error) } else { cont?.resume(returning: (data, response)) }
+        cont = nil
     }
 }

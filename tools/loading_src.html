@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>마린 키우기</title>
+<!-- 앱(안드로이드·아이폰)이 게임 페이지를 확인하고 받는 동안 띄우는 화면.
+     게임 안의 로딩 화면(#boot)과 똑같이 보이게 만든다. 원본은 tools/loading_src.html,
+     tools/build_loading.py 가 글꼴을 필요한 글자만 잘라 넣어 앱 두 곳에 복사한다. -->
+<style>
+@font-face { font-family: 'Black Han Sans'; src: url(data:font/woff2;base64,{{FONT_DISPLAY}}) format('woff2'); }
+@font-face { font-family: 'Gothic A1'; font-weight: 700; src: url(data:font/woff2;base64,{{FONT_BODY}}) format('woff2'); }
+:root {
+  --ink: #0a0f1c; --fg: #eaf0ff; --fg-dim: #a9b6d6; --hazard: #ffc21f; --night: #05070f;
+  --font-display: 'Black Han Sans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: 'Gothic A1', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  touch-action: manipulation; color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+body { background: var(--night); color: var(--fg); overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+#wrap { height: 100%; display: grid; place-items: center; }
+#game { --u: 1px; --st: 0px; --sb: 0px; position: relative; overflow: hidden; font-size: calc(var(--u) * 16); font-family: var(--font-body); font-weight: 700; color: var(--fg); line-height: 1.25; }
+#safeProbe { position: fixed; left: 0; top: 0; width: 0; visibility: hidden; pointer-events: none; padding-top: var(--safe-top, 0px); padding-bottom: var(--safe-bottom, 0px); }
+p, h1 { margin: 0; }
+.outline { text-shadow: -.06em -.06em 0 var(--ink), .06em -.06em 0 var(--ink), -.06em .06em 0 var(--ink), .06em .06em 0 var(--ink), 0 -.07em 0 var(--ink), 0 .07em 0 var(--ink), -.07em 0 0 var(--ink), .07em 0 0 var(--ink), 0 .11em 0 var(--ink), -.06em .13em 0 var(--ink), .06em .13em 0 var(--ink), 0 .16em 0 var(--ink); }
+.logo { font-size: 1em; white-space: nowrap; margin-top: .1em; display: flex; flex-direction: column; align-items: center; font-family: var(--font-display); font-weight: 400; line-height: 1; transform: rotate(-3deg); }
+.logo .l1 { font-size: 4.4em; color: var(--hazard); }
+.logo .l2 { font-size: 3.5em; color: var(--fg); margin-left: .9em; }
+.tagline { align-self: center; font-family: var(--font-display); font-weight: 400; font-size: .95em; background: var(--ink); color: var(--hazard); padding: .22em .9em; border-radius: .3em; letter-spacing: .04em; }
+#boot { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: calc(2.2em + var(--st)) 1.4em calc(1.6em + var(--sb));
+  background: radial-gradient(ellipse at 50% 38%, #2a3b63 0%, #141d33 55%, #070a14 100%); }
+#boot::before, #boot::after { content: ''; position: absolute; left: 0; right: 0; height: .55em; background: repeating-linear-gradient(135deg, var(--hazard) 0 .8em, var(--ink) .8em 1.6em); }
+#boot::before { top: var(--st); }
+#boot::after { bottom: var(--sb); }
+.boot-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8em; }
+.boot-helm { width: 7em; height: 7em; }
+.boot-low { display: flex; flex-direction: column; align-items: stretch; gap: .55em; }
+.boot-txt { text-align: center; font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--fg); }
+.boot-bar { position: relative; height: 1.25em; background: var(--ink); border: .14em solid var(--ink); border-radius: .5em; overflow: hidden; box-shadow: 0 .18em 0 #000; }
+.boot-bar i { display: block; height: 100%; width: 0; border-radius: .3em; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .18) 0 .5em, transparent .5em 1em), linear-gradient(#ffd851, #f2a414); transition: width .2s linear; }
+.boot-bar b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 400; font-size: .72em; color: #fff; text-shadow: 0 .08em 0 var(--ink), 0 -.08em 0 var(--ink), .08em 0 0 var(--ink), -.08em 0 0 var(--ink); font-variant-numeric: tabular-nums; }
+.boot-tip { min-height: 2.6em; text-align: center; font-size: .78em; color: var(--fg-dim); text-wrap: balance; transition: opacity .3s; }
+.boot-tip::before { content: '작전 팁'; display: block; font-family: var(--font-display); font-weight: 400; font-size: .9em; color: var(--hazard); letter-spacing: .08em; margin-bottom: .15em; }
+</style>
+<script>
+// 안드로이드 앱은 상태 바·내비게이션 바 높이를 MKShell 로 알려 준다 (아이폰은 env(safe-area-inset-*) 로 바로 읽힌다)
+(function () {
+  var s = window.MKShell; if (!s) return;
+  try { var r = document.documentElement.style; r.setProperty('--safe-top', s.safeTop() + 'px'); r.setProperty('--safe-bottom', s.safeBottom() + 'px'); } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="safeProbe"></div>
+<div id="wrap">
+  <div id="game">
+    <div id="boot">
+      <div class="boot-mid">
+        <div class="boot-helm"></div>
+        <h1 class="logo"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span></h1>
+        <p class="tagline">강화복 해병 서바이벌</p>
+      </div>
+      <div class="boot-low">
+        <p class="boot-txt outline" id="txt">보급품 확인 중</p>
+        <div class="boot-bar"><i id="fill"></i><b id="pct">0%</b></div>
+        <p class="boot-tip" id="tip"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var TIPS = {{TIPS}};
+  var game = document.getElementById('game'), probe = document.getElementById('safeProbe'), wrap = document.getElementById('wrap');
+  // 게임의 resize() 와 같은 계산: 논리 가로 390, 세로는 기기 비율 (1.6 ~ 2.4)
+  function resize() {
+    var vw = wrap.clientWidth || innerWidth, vh = wrap.clientHeight || innerHeight, w = vw, h = vh;
+    if (h / w < 1.6) w = Math.min(vw, h / 1.78);
+    if (h / w > 2.4) h = w * 2.4;
+    var ps = getComputedStyle(probe), gap = (vh - h) / 2;
+    game.style.width = w + 'px'; game.style.height = h + 'px';
+    game.style.setProperty('--u', (w / 390) + 'px');
+    game.style.setProperty('--st', Math.max(0, (parseFloat(ps.paddingTop) || 0) - gap) + 'px');
+    game.style.setProperty('--sb', Math.max(0, (parseFloat(ps.paddingBottom) || 0) - gap) + 'px');
+  }
+  addEventListener('resize', resize); resize();
+  var tipEl = document.getElementById('tip'), tipI = Math.floor(Math.random() * TIPS.length);
+  tipEl.textContent = TIPS[tipI];
+  setInterval(function () { tipEl.style.opacity = 0; setTimeout(function () { tipI = (tipI + 1) % TIPS.length; tipEl.textContent = TIPS[tipI]; tipEl.style.opacity = 1; }, 300); }, 3200);
+  // 앱이 부른다: mkLoad('새 버전을 받는 중', 0.42). 비율을 모르면 생략
+  window.mkLoad = function (text, frac) {
+    if (text) document.getElementById('txt').textContent = text;
+    if (typeof frac === 'number' && frac >= 0) {
+      var f = Math.max(0, Math.min(1, frac));
+      document.getElementById('fill').style.width = (f * 100).toFixed(1) + '%';
+      document.getElementById('pct').textContent = Math.floor(f * 100) + '%';
+    }
+  };
+})();
+</script>
+</body>
+</html>

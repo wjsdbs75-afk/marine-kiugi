@@ -29,7 +29,6 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
 
@@ -46,6 +45,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import org.json.JSONObject;
 
 /**
  * 게임 본체는 GitHub Pages 에 있고, 이 앱은 그 페이지를 화면 가득 띄우는 껍데기다.
@@ -70,8 +71,10 @@ public class MainActivity extends Activity {
     private File gameFile;                // 기기에 저장해 둔 게임 페이지
     private FrameLayout root;
     private WebView web;
-    private LinearLayout loadingView;
-    private TextView loadingText;
+    private WebView loadWeb;              // 확인·받는 동안 띄우는 화면 (assets/loading.html, 게임 안의 로딩 화면과 같은 모양)
+    private String loadText = "";         // 로딩 화면에 마지막으로 보낸 글자와 비율 (화면이 늦게 뜨면 다시 보낸다)
+    private float loadFrac = 0f;
+    private long loadSentAt;
     private LinearLayout errorView;
     private TextView errorDetail;
 
@@ -199,13 +202,21 @@ public class MainActivity extends Activity {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         root.addView(web, fill);
 
-        loadingView = column(false);
-        ProgressBar spinner = new ProgressBar(this);
-        spinner.setIndeterminate(true);
-        loadingView.addView(spinner, new LinearLayout.LayoutParams(dp(44), dp(44)));
-        loadingText = label(R.color.fg_dim, 14);
-        loadingView.addView(loadingText, wrapParams(dp(14)));
-        root.addView(loadingView, fill);
+        loadWeb = new WebView(this);
+        loadWeb.setBackgroundColor(night);
+        loadWeb.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        loadWeb.setVerticalScrollBarEnabled(false);
+        loadWeb.setHorizontalScrollBarEnabled(false);
+        loadWeb.setOnLongClickListener(v -> true);
+        WebSettings ls = loadWeb.getSettings();
+        ls.setJavaScriptEnabled(true);
+        ls.setTextZoom(100);
+        ls.setSupportZoom(false);
+        ls.setAllowContentAccess(false);
+        loadWeb.addJavascriptInterface(new Shell(), "MKShell");
+        loadWeb.setWebViewClient(new LoadClient());
+        loadWeb.loadUrl("file:///android_asset/loading.html");
+        root.addView(loadWeb, fill);
 
         errorView = column(true);
         errorView.setVisibility(View.GONE);
@@ -265,8 +276,7 @@ public class MainActivity extends Activity {
         pageReady = false;
         mainFrameFailed = false;
         errorView.setVisibility(View.GONE);
-        loadingText.setText("");
-        loadingView.setVisibility(View.VISIBLE);
+        showLoading(getString(R.string.loading_check), 0f);
         if (web != null) {
             web.setVisibility(View.INVISIBLE);   // 다 뜬 뒤에 보여 준다
         }
@@ -280,12 +290,29 @@ public class MainActivity extends Activity {
                     problem = getString(R.string.error_offline);
                 } else if (!file.isFile() || site.isEmpty()
                         || !site.equals(prefs.getString(PREF_SITE_VERSION, null))) {
+                    final String label = getString(file.isFile() ? R.string.loading_update : R.string.loading_first);
+                    final long size = siteSize(site);   // 받을 페이지 크기 (모르면 0)
                     runOnUiThread(() -> {
                         if (seq == startSeq) {
-                            loadingText.setText(file.isFile() ? R.string.loading_update : R.string.loading_first);
+                            showLoading(label, 0f);
                         }
                     });
-                    problem = download(file);
+                    problem = download(file, got -> {
+                        if (size <= 0) {
+                            return;
+                        }
+                        long now = SystemClock.elapsedRealtime();
+                        if (now - loadSentAt < 80 && got < size) {
+                            return;
+                        }
+                        loadSentAt = now;
+                        final float f = Math.min(1f, got / (float) size);
+                        runOnUiThread(() -> {
+                            if (seq == startSeq) {
+                                showLoading(label, f);
+                            }
+                        });
+                    });
                     if (problem == null) {
                         prefs.edit().putString(PREF_SITE_VERSION, site).commit();
                     }
@@ -331,11 +358,25 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** version.json 의 size (게임 페이지 바이트 수). 없거나 읽지 못하면 0. */
+    private static long siteSize(String site) {
+        try {
+            return new JSONObject(site).optLong("size", 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /** 받는 중에 지금까지 받은 바이트 수를 알려 준다 (받는 스레드에서 불린다). */
+    private interface Progress {
+        void got(long bytes);
+    }
+
     /**
      * 게임 페이지를 받아 dest 에 저장한다. 임시 파일에 다 받은 뒤 이름을 바꾸므로 실패해도 기존 dest 는 그대로다.
      * 성공하면 null, 실패하면 화면에 보여 줄 이유.
      */
-    private static String download(File dest) {
+    private static String download(File dest, Progress progress) {
         File tmp = new File(dest.getPath() + ".tmp");
         HttpURLConnection c = null;
         try {
@@ -347,8 +388,11 @@ public class MainActivity extends Activity {
             try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(tmp)) {
                 byte[] buf = new byte[64 * 1024];
                 int n;
+                long total = 0;
                 while ((n = in.read(buf)) > 0) {
                     out.write(buf, 0, n);
+                    total += n;
+                    progress.got(total);
                 }
             }
             if (!looksComplete(tmp)) {
@@ -395,9 +439,67 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** 로딩 화면을 보이고 글자와 막대를 바꾼다. */
+    private void showLoading(String text, float frac) {
+        loadText = text;
+        loadFrac = frac;
+        if (loadWeb == null) {
+            return;
+        }
+        loadWeb.animate().cancel();
+        loadWeb.setAlpha(1f);
+        loadWeb.setVisibility(View.VISIBLE);
+        sendLoading();
+    }
+
+    private void sendLoading() {
+        if (loadWeb != null) {
+            loadWeb.evaluateJavascript(String.format(Locale.US, "window.mkLoad&&mkLoad(%s,%.4f)",
+                    JSONObject.quote(loadText), loadFrac), null);
+        }
+    }
+
+    /** 게임이 떴다: 로딩 화면을 걷어 낸다. 밑에서 게임의 로딩 화면이 같은 모양으로 이어진다. */
+    private void hideLoading() {
+        if (loadWeb != null && loadWeb.getVisibility() == View.VISIBLE) {
+            loadWeb.animate().alpha(0f).setDuration(200).withEndAction(() -> {
+                if (loadWeb != null) {
+                    loadWeb.setVisibility(View.GONE);
+                }
+            });
+        }
+    }
+
+    /** 로딩 화면 자체의 웹 화면. 다 뜨면 마지막 상태를 다시 보낸다. */
+    private final class LoadClient extends WebViewClient {
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            pushInsets();
+            sendLoading();
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            return true;   // 로딩 화면에서는 어디로도 가지 않는다
+        }
+
+        @Override
+        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            // 로딩 화면만 없애고 게임은 그대로 진행한다 (게임 화면 쪽은 Client 가 처리한다)
+            if (loadWeb != null) {
+                root.removeView(loadWeb);
+                loadWeb.destroy();
+                loadWeb = null;
+            }
+            return true;
+        }
+    }
+
     private void showError(String detail) {
         pageReady = false;
-        loadingView.setVisibility(View.GONE);
+        if (loadWeb != null) {
+            loadWeb.setVisibility(View.GONE);
+        }
         if (web != null) {
             web.setVisibility(View.INVISIBLE);
         }
@@ -495,8 +597,8 @@ public class MainActivity extends Activity {
                 if (seq != startSeq || web == null || mainFrameFailed) {
                     return;
                 }
-                loadingView.setVisibility(View.GONE);
                 web.setVisibility(View.VISIBLE);
+                hideLoading();
                 pageReady = "true".equals(value);
                 if (!pageReady) {
                     // 게임이 아닌 것이 떴다. 다음에 켤 때 다시 받도록 "받았다"는 표시를 지운다
@@ -543,16 +645,18 @@ public class MainActivity extends Activity {
 
     /** 값이 나중에 정해지거나 바뀐 경우 페이지에 다시 알려 준다. 게임은 resize 때 이 값을 다시 읽는다. */
     private void pushInsets() {
-        if (web == null) {
-            return;
-        }
         String js = String.format(Locale.US,
                 "(function(){var r=document.documentElement;if(!r)return;"
                         + "r.style.setProperty('--safe-top','%.2fpx');"
                         + "r.style.setProperty('--safe-bottom','%.2fpx');"
                         + "window.dispatchEvent(new Event('resize'));})()",
                 safeTopPx / density(), safeBottomPx / density());
-        web.evaluateJavascript(js, null);
+        if (web != null) {
+            web.evaluateJavascript(js, null);
+        }
+        if (loadWeb != null) {
+            loadWeb.evaluateJavascript(js, null);
+        }
     }
 
     // ------------------------------------------------------------------ 뒤로 가기
@@ -626,6 +730,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         startSeq++;
+        if (loadWeb != null) {
+            root.removeView(loadWeb);
+            loadWeb.destroy();
+            loadWeb = null;
+        }
         if (web != null) {
             root.removeView(web);
             web.destroy();
