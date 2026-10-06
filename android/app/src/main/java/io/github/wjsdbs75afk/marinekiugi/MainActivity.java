@@ -109,6 +109,8 @@ public class MainActivity extends Activity {
     private void setUpWindow() {
         Window w = getWindow();
         w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // 상태 바를 처음부터 숨긴다 (옛 방식. 안드로이드 11 이상은 hideSystemBars 의 InsetsController 가 숨긴다)
+        w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 28) {
             WindowManager.LayoutParams lp = w.getAttributes();
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -637,6 +639,12 @@ public class MainActivity extends Activity {
 
     /** 페이지가 시작될 때 읽어 가는 값 (index.html 머리의 스크립트가 부른다). 단위는 CSS px. */
     public final class Shell {
+        /** 설치된 앱(껍데기) 버전. 게임 설정 화면에 함께 보여 준다. */
+        @JavascriptInterface
+        public String appVersion() {
+            return "안드로이드 " + BuildConfig.VERSION_NAME;
+        }
+
         @JavascriptInterface
         public float safeTop() {
             return safeTopPx / density();
@@ -696,7 +704,10 @@ public class MainActivity extends Activity {
 
         /** 숨긴 상태 바·내비게이션 바는 쓸어 넘길 때만 잠깐 화면 위에 겹쳐 나온다 (게임 배치는 움직이지 않는다). */
         static void hideSystemBars(Window w) {
-            WindowInsetsController c = w.getDecorView().getWindowInsetsController();
+            WindowInsetsController c = w.getInsetsController();
+            if (c == null) {
+                c = w.getDecorView().getWindowInsetsController();
+            }
             if (c == null) {
                 return;
             }

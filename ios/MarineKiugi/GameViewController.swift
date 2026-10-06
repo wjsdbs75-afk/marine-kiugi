@@ -55,6 +55,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         let css = "html,body{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}"
         let js = "(function(){var s=document.createElement('style');s.textContent='\(css)';document.documentElement.appendChild(s);})();"
         cfg.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        // 설치된 앱 버전을 페이지에 알려 준다 (게임 설정 화면에 표시)
+        let ver = "아이폰 \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"))"
+        cfg.userContentController.addUserScript(WKUserScript(source: "window.MKApp={version:\(String(reflecting: ver))};", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         let w = WKWebView(frame: view.bounds, configuration: cfg)
         w.autoresizingMask = [.flexibleWidth, .flexibleHeight]
