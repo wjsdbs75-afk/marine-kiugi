@@ -90,7 +90,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 #energyNote { color: #fff; font-size: .78em; min-height: 1.2em; }
 .idle-btn b { font-weight: 400; font-variant-numeric: tabular-nums; }
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .6em; }
-#pageHome { pointer-events: none; padding-bottom: 1.3em; }   /* 가운데 전투 탭이 위로 솟아 있어 그만큼 띄운다 */
+#pageHome { pointer-events: none; padding-bottom: .5em; }
 #pageHome > * { pointer-events: auto; }
 .logo { font-size: 1em; white-space: nowrap; margin-top: .1em; display: flex; flex-direction: column; align-items: center; font-family: var(--font-display); font-weight: 400; line-height: 1; transform: rotate(-3deg); pointer-events: none; }
 .logo .l1 { font-size: 4.4em; color: var(--hazard); }
@@ -134,18 +134,25 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .tab { transition: transform .13s ease-out, background .13s; position: relative; }
 .tab canvas, .tab svg { width: 3.3em; height: 3.3em; margin-bottom: -.12em; transition: width .13s, height .13s; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .45)); }
 .tab:active { transform: scale(.94); }
-.tab[aria-selected="true"] { background: var(--hazard); color: var(--ink); border-color: var(--ink); transform: translateY(-.5em) scale(1.1); box-shadow: 0 .3em 0 #000; z-index: 1; }
+.tab { transform-origin: 50% 100%; }
+.tab[aria-selected="true"] { background: var(--hazard); color: var(--ink); border-color: var(--ink); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .5); z-index: 1; }
 .tab[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
-/* 가운데 '전투' 탭: 늘 노랗게 솟아 있는 큰 버튼. 고르면 흰 테두리가 둘러진다 */
-.tab.main { background: linear-gradient(#ffd851, #f2a414); color: var(--ink); border-color: var(--ink); font-size: .95em; transform: translateY(-.75em); box-shadow: 0 .3em 0 #000, inset 0 .12em 0 rgba(255, 255, 255, .55); border-radius: .75em; padding-top: .05em; }
-.tab.main canvas { width: 3.9em; height: 3.9em; }
-.tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); transform: translateY(-.95em) scale(1.08); box-shadow: 0 .3em 0 #000, 0 0 0 .16em #fff; }
-.tab.main[aria-selected="true"] canvas { width: 4.3em; height: 4.3em; }
-.tab.main:active { transform: translateY(-.75em) scale(.95); }
+/* 가운데 '전투' 탭: 늘 노란 큰 버튼. 아랫선은 다른 탭과 같고, 아이콘이 큰 만큼만 위로 솟는다. 고르면 흰 테두리 */
+.tab.main { background: linear-gradient(#ffd851, #f2a414); color: var(--ink); border-color: var(--ink); font-size: .95em; box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55); border-radius: .7em; padding-top: .05em; transform-origin: 50% 100%; }
+.tab.main canvas { width: 3.75em; height: 3.75em; }
+.tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55), 0 0 0 .14em #fff; }
+.tab.main[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
+.tab.main:active { transform: scale(.95); }
 /* ---- 상점 */
 .shop-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .6em; margin: 0 -.3em; padding: .1em .3em .7em; -webkit-overflow-scrolling: touch; }
 .shop-scroll > * { flex: none; }
 .crate-card { position: relative; display: grid; grid-template-columns: 6.4em minmax(0, 1fr); align-items: center; gap: .5em; padding: .55em .6em .6em .4em; color: var(--ink); background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .08) 0 .5em, transparent .5em 1em), linear-gradient(135deg, #ffd650, #f0a012); border: .15em solid var(--ink); border-radius: .7em; box-shadow: 0 .28em 0 var(--ink), inset 0 .12em 0 rgba(255, 255, 255, .5); overflow: hidden; }
+.crate-card.normal { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .07) 0 .5em, transparent .5em 1em), linear-gradient(135deg, #c9d4ea, #8d9cbf); }
+.crate-card.normal .crate-sub { color: #26324d; }
+.crate-sub { white-space: pre-line; }
+.crate-card.premium { box-shadow: 0 .28em 0 var(--ink), inset 0 .12em 0 rgba(255, 255, 255, .5), 0 0 1.1em rgba(255, 194, 31, .35); }
+.crate-card.premium .crate-art { filter: drop-shadow(0 .2em 0 rgba(0, 0, 0, .35)) drop-shadow(0 0 .5em rgba(255, 255, 255, .7)); }
+.crate-ribbon { position: absolute; left: -1.9em; top: .75em; z-index: 2; width: 6.6em; padding: .1em 0; text-align: center; transform: rotate(-38deg); background: var(--danger); color: #fff; border-top: .1em solid var(--ink); border-bottom: .1em solid var(--ink); font-family: var(--font-display); font-weight: 400; font-size: .72em; letter-spacing: .1em; }
 .crate-art { width: 6.4em; height: 6.4em; filter: drop-shadow(0 .2em 0 rgba(0, 0, 0, .35)); }
 .crate-info { display: flex; flex-direction: column; gap: .3em; min-width: 0; }
 .crate-title { font-family: var(--font-display); font-weight: 400; font-size: 1.4em; line-height: 1.05; }
@@ -351,14 +358,26 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       <div id="pageShop" class="page pane shop" hidden>
         <div class="pane-head"><h2>상점</h2></div>
         <div class="shop-scroll" id="shopScroll">
-          <section class="crate-card" aria-labelledby="crateTitle">
+          <section class="crate-card normal" aria-labelledby="crateTitle">
             <canvas class="crate-art" data-ico="crate" width="96" height="96" aria-hidden="true"></canvas>
             <div class="crate-info">
-              <b class="crate-title" id="crateTitle">장비 보급</b>
-              <p class="crate-sub">무작위 장비가 든 보급 상자. 높은 스테이지를 깰수록 좋은 등급이 잘 나와요.</p>
+              <b class="crate-title" id="crateTitle">일반 장비 상자</b>
+              <p class="crate-sub" id="crateOddsN">무작위 장비 1개. 높은 스테이지를 깰수록 좋은 등급이 잘 나와요.</p>
               <div class="crate-btns">
-                <button id="btnPull1" class="btn dark" type="button"><small>1회 보급</small><span class="price"><span class="gem-dot"></span><span id="pull1Cost">30</span></span></button>
+                <button id="btnPull1" class="btn dark" type="button"><small>1회</small><span class="price"><span class="gem-dot"></span><span id="pull1Cost">30</span></span></button>
                 <button id="btnPull10" class="btn dark best" type="button"><small>10회 · 10% 할인</small><span class="price"><span class="gem-dot"></span><span id="pull10Cost">270</span></span></button>
+              </div>
+            </div>
+          </section>
+          <section class="crate-card premium" aria-labelledby="crateTitleP">
+            <span class="crate-ribbon">고급</span>
+            <canvas class="crate-art" data-ico="crate" width="96" height="96" aria-hidden="true"></canvas>
+            <div class="crate-info">
+              <b class="crate-title" id="crateTitleP">고급 장비 상자</b>
+              <p class="crate-sub" id="crateOddsP">고급 등급 이상만 나와요. 10회 열면 영웅 이상 1개 보장.</p>
+              <div class="crate-btns">
+                <button id="btnPullP1" class="btn dark" type="button"><small>1회</small><span class="price"><span class="gem-dot"></span><span id="pullP1Cost">90</span></span></button>
+                <button id="btnPullP10" class="btn dark best" type="button"><small>10회 · 영웅 보장</small><span class="price"><span class="gem-dot"></span><span id="pullP10Cost">810</span></span></button>
               </div>
             </div>
           </section>
@@ -501,7 +520,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.43', VERSION_DATE = '2026.10.06', VERSION_NOTE = '전투 HUD: 긴 체력·경험치 바 배치로 되돌리고 간격·정렬 통일';   // 게시할 때마다 올린다
+const VERSION = 'v0.44', VERSION_DATE = '2026.10.06', VERSION_NOTE = '보스 공격 예고 표시와 새 패턴, 하단 탭 정리, 고급 장비 상자 추가';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -632,7 +651,9 @@ const RARITY = [
   { name: '일반', col: '#9aa6bf', mul: 1, subs: 0 }, { name: '고급', col: '#5fe08a', mul: 1.6, subs: 1 }, { name: '희귀', col: '#4aa8ff', mul: 2.4, subs: 1 },
   { name: '영웅', col: '#c77dff', mul: 3.6, subs: 2 }, { name: '전설', col: '#ffc21f', mul: 5.5, subs: 3 },
 ];
-const GEAR_MAX_LV = 10, INV_CAP = 60, PULL_COST = 30;          // 보급 1회 = 보석 30
+const GEAR_MAX_LV = 10, INV_CAP = 60;
+// 장비 상자: 일반(지금까지의 보급)과 고급(고급 등급 이상만, 10회에 영웅 이상 1개 보장)
+const CRATES = { n: { cost: 30, name: '일반 장비 상자' }, p: { cost: 90, name: '고급 장비 상자' } };
 const gearKind = it => SLOTS[it.s].kinds[it.k || 0] || SLOTS[it.s].kinds[0];
 const gearVal = it => gearKind(it).base * RARITY[it.r].mul * (1 + 0.12 * it.lv);
 const statTxt = (st, v) => { const d = STATS[st]; return `${d.label} ${d.sign}${v.toFixed(v < 1 ? 2 : v < 10 ? 1 : 0)}${d.unit}`; };
@@ -640,14 +661,17 @@ const gearValTxt = it => statTxt(gearKind(it).stat, gearVal(it));
 const gearName = it => `${RARITY[it.r].name} ${gearKind(it).name}${it.lv ? ' +' + it.lv : ''}`;
 const gearUpCost = it => Math.round(40 * (it.lv + 1) * (1 + it.r * 0.8));
 const gearSell = it => Math.round(15 * (1 + it.r) * (1 + it.r) + 14 * it.lv * (1 + it.r * 0.8));
-function rollRarity(stage) {
-  const w = [60, 26 + stage * 1.5, 8 + stage * 1.5, 1.5 + stage * 0.8, 0.2 + stage * 0.3];
+const rarityWeights = (stage, crate) => crate === 'p'
+  ? [0, 50, 34 + stage, 12 + stage * 0.6, 3 + stage * 0.3]
+  : [60, 26 + stage * 1.5, 8 + stage * 1.5, 1.5 + stage * 0.8, 0.2 + stage * 0.3];
+function rollRarity(stage, crate) {
+  const w = rarityWeights(stage, crate);
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i; }
   return 0;
 }
-function makeGear(stage) {
-  const s = Math.floor(Math.random() * SLOTS.length), k = Math.floor(Math.random() * SLOTS[s].kinds.length), r = rollRarity(stage);
+function makeGear(stage, crate, minR = 0) {
+  const s = Math.floor(Math.random() * SLOTS.length), k = Math.floor(Math.random() * SLOTS[s].kinds.length), r = Math.max(minR, rollRarity(stage, crate));
   const pool = Object.keys(STATS).filter(st => st !== SLOTS[s].kinds[k].stat), sub = [];
   for (let i = 0; i < RARITY[r].subs; i++) { const st = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; sub.push([st, +(STATS[st].sub * (0.7 + Math.random() * 0.6) * (1 + 0.3 * r)).toFixed(2)]); }
   const it = { id: save.nid++, s, k, r, lv: 0, sub }; save.inv.push(it); return it;
@@ -1286,7 +1310,7 @@ function newRun(stage) {
     stage, st: STAGES[stage - 1], round: 0, roundT: 0, time: 0, kills: 0, coins: 0,
     state: 'intro', introT: 0, introFast: false, landed: false,
     p: { x: 0, y: 0, hp: 100, maxHp: 100, dir: 2, aim: Math.PI / 2, walk: 0, idle: 0, moving: false, fire: 0, fireT: 0.3, stimT: 0, stimLock: 0, iframe: 0, shieldOn: false, shieldT: 0, shotsL: 0, shotsC: 0, shotSeq: 0, adr: 0, adrT: 0, visible: false, lift: 0, lowBark: 0, dead: false },
-    enemies: [], bullets: [], ebullets: [], gems: [], picks: [], parts: [], texts: [], fx: [], mines: [], nades: [], shells: [], bombers: [], booms: [], medic: null, squad: [], drones: [],
+    enemies: [], bullets: [], ebullets: [], warns: [], gems: [], picks: [], parts: [], texts: [], fx: [], mines: [], nades: [], shells: [], bombers: [], booms: [], medic: null, squad: [], drones: [],
     up: {}, loot: [], level: 1, xp: 0, xpNeed: 11, pending: 0, reroll: 1, chest: 0, choices: [], autoPickT: 0,
     spawnAcc: 0, boss: null, bossSpawned: false,
     shake: 0, flash: 0, flashCol: '255,60,60', banner: null, bark: null,
@@ -1464,7 +1488,7 @@ function onDeath() {
 }
 function onBossDead(e) {
   for (const o of G.enemies) { if (!o.dead) { o.dead = true; burst(o.x, o.y - o.r, o.c1, 5, 110); } }
-  G.ebullets.length = 0;
+  G.ebullets.length = 0; G.warns.length = 0;
   for (let i = 0; i < 5; i++) G.fx.push({ k: 'boom', x: e.x + rand(-40, 40), y: e.y - rand(0, 50), r: rand(40, 80), t: -i * 0.12, dur: 0.4, col: i % 2 ? '#ffd24a' : '#ff8f5e' });
   shake(12); SFX.boom(); G.flash = 0.5; G.flashCol = '255,255,255';
   G.coins += Math.round(30 * G.stage * G.p.coinMul);
@@ -1537,6 +1561,13 @@ function autoMove() {
     if (b.seen == null) b.seen = Math.random() < 0.45;
     if (!b.seen) continue;
     const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 48) { const w = (48 - d) / 48; vx += -b.vy / 110 * w * 1.2 + dx / d * w * 0.8; vy += b.vx / 110 * w * 1.2 + dy / d * w * 0.8; }
+  }
+  // 바닥 예고: 대부분(70%) 알아채고 원·길 밖으로 빠진다
+  for (const w of G.warns) {
+    if (w.seen == null) w.seen = Math.random() < 0.7;
+    if (!w.seen || w.t < 0) continue;
+    if (w.k === 'lane') { const rx = p.x - w.x, ry = p.y - w.y, along = rx * w.ux + ry * w.uy, side = -rx * w.uy + ry * w.ux; if (along > -20 && along < w.len + 20 && Math.abs(side) < w.w / 2 + 16) { const sg = side >= 0 ? 1 : -1; vx += -w.uy * sg * 2.2; vy += w.ux * sg * 2.2; } }
+    else if (w.k === 'slam') { const dx = p.x - w.x, dy = (p.y - w.y) / 0.62, d = Math.hypot(dx, dy) || 1; if (d < w.r + 18) { vx += dx / d * 2.2; vy += dy / d * 2.2; } }
   }
   // 줍기: 주변이 한산하면 경험치/아이템 쪽으로
   let best = null, bd = 300 * 300;
@@ -1641,7 +1672,7 @@ function updatePlay(dt) {
     if (c >= 6) useStim();
   }
 
-  updateSquad(dt, stim); updateMedic(dt); updateSkills(dt); updateBullets(dt); updateEnemies(dt); updateEBullets(dt); updatePickups(dt);
+  updateSquad(dt, stim); updateMedic(dt); updateSkills(dt); updateBullets(dt); updateEnemies(dt); updateWarns(dt); updateEBullets(dt); updatePickups(dt);
   if (g.enemies.some(e => e.dead)) g.enemies = g.enemies.filter(e => !e.dead);
   if (g.boss && g.boss.dead) g.boss = null;
   if (g.pending > 0 && g.state === 'play') openLevelUp();
@@ -1775,16 +1806,76 @@ function updateBullets(dt) {
 }
 
 function shootE(e, ux, uy, spd, dmg, col) { G.ebullets.push({ x: e.x + ux * e.r, y: e.y + uy * e.r, vx: ux * spd, vy: uy * spd, life: 4.2, dmg, r: 5, col, boss: !!e.boss }); }
+// 보스 패턴: 탄막 → 돌진 → 내려찍기 → 졸개 소환을 돌아가며 쓴다. 큰 공격은 모두 바닥에 빨간 예고를 먼저 띄운다.
+const CHARGE_T = 0.55, CHARGE_K = 6;
 function bossAI(e, dt, ux, uy) {
   e.mx = ux; e.my = uy; e.spd = e.baseSpd;
-  if (e.mode === 'charge') { e.modeT -= dt; e.mx = e.cx; e.my = e.cy; e.spd = e.baseSpd * 6; if (Math.random() < dt * 30) dust(e.x, e.y, 1); if (e.modeT <= 0) e.mode = null; return; }
-  if (e.mode === 'wind') { e.modeT -= dt; e.spd = 0; if (e.modeT <= 0) { e.mode = 'charge'; e.modeT = 0.55; e.cx = ux; e.cy = uy; shake(4); } return; }
+  if (e.mode === 'charge') { e.modeT -= dt; e.mx = e.cx; e.my = e.cy; e.spd = e.baseSpd * CHARGE_K; if (Math.random() < dt * 30) dust(e.x, e.y, 1); if (e.modeT <= 0) e.mode = null; return; }
+  if (e.mode === 'wind') { e.modeT -= dt; e.spd = 0; if (e.modeT <= 0) { e.mode = 'charge'; e.modeT = CHARGE_T; shake(4); } return; }
+  if (e.mode === 'cast') {     // 탄막 모으기: 다 모이면 사방으로
+    e.modeT -= dt; e.spd = 0;
+    if (e.modeT <= 0) { e.mode = null; const n = 9 + G.stage, off = rand(TAU); for (let i = 0; i < n; i++) { const a = off + i * TAU / n; shootE(e, Math.cos(a), Math.sin(a), 92, e.dmg * 0.7, '#ff9ac0'); } SFX.zap(); shake(3); }
+    return;
+  }
+  if (e.mode === 'stomp') { e.modeT -= dt; e.spd = 0; if (e.modeT <= 0) e.mode = null; return; }
   e.cd -= dt;
   if (e.cd <= 0) {
-    const k = e.pat++ % 3; e.cd = Math.max(2.2, 3.6 - G.stage * 0.1);
-    if (k === 0) { const n = 9 + G.stage, off = rand(TAU); for (let i = 0; i < n; i++) { const a = off + i * TAU / n; shootE(e, Math.cos(a), Math.sin(a), 92, e.dmg * 0.7, '#ff9ac0'); } SFX.zap(); }
-    else if (k === 1) { e.mode = 'wind'; e.modeT = 0.75; }
-    else { const n = 4 + Math.floor(G.stage / 2); for (let i = 0; i < n; i++) { const a = i * TAU / n; const m = makeEnemy('runner', e.x + Math.cos(a) * 44, e.y + Math.sin(a) * 44); burst(m.x, m.y - 6, '#fff', 4, 80); } }
+    const k = e.pat++ % 4; e.cd = Math.max(2.2, 3.6 - G.stage * 0.1);
+    if (k === 0) { e.mode = 'cast'; e.modeT = 0.6; G.warns.push({ k: 'ring', host: e, r: 60, t: 0, dur: 0.6 }); }
+    else if (k === 1) {     // 돌진: 방향을 지금 정하고, 지나갈 길을 보여 준다 (옆으로 비키면 피할 수 있다)
+      e.mode = 'wind'; e.modeT = 0.75; e.cx = ux; e.cy = uy;
+      G.warns.push({ k: 'lane', x: e.x, y: e.y, ux, uy, len: e.baseSpd * CHARGE_K * CHARGE_T + e.r, w: e.r * 2 + 14, t: 0, dur: 0.75 });
+    } else if (k === 2) {   // 내려찍기: 해병 자리와 그 둘레에 원이 차오르다 터진다
+      const p = G.p, n = 3 + Math.floor(G.stage / 3), dur = Math.max(0.8, 1.1 - G.stage * 0.02);
+      e.mode = 'stomp'; e.modeT = 0.5;
+      for (let i = 0; i < n; i++) {
+        const a = rand(TAU), dd = i === 0 ? 0 : rand(55, 130);
+        G.warns.push({ k: 'slam', x: p.x + Math.cos(a) * dd, y: p.y + Math.sin(a) * dd, r: 44, t: -i * 0.12, dur, dmg: e.dmg * 1.1 });
+      }
+      SFX.warn();
+    } else { const n = 4 + Math.floor(G.stage / 2); for (let i = 0; i < n; i++) { const a = i * TAU / n; const m = makeEnemy('runner', e.x + Math.cos(a) * 44, e.y + Math.sin(a) * 44); burst(m.x, m.y - 6, '#fff', 4, 80); } }
+  }
+}
+function updateWarns(dt) {
+  const ws = G.warns, p = G.p;
+  for (let i = ws.length - 1; i >= 0; i--) {
+    const w = ws[i]; w.t += dt;
+    if (w.host) { if (w.host.dead) { ws.splice(i, 1); continue; } w.x = w.host.x; w.y = w.host.y; }
+    if (w.t < w.dur) continue;
+    if (w.k === 'slam') {
+      G.fx.push({ k: 'boom', x: w.x, y: w.y, r: w.r + 8, t: 0, dur: 0.32, col: '#ff6b5a' }); dust(w.x, w.y, 6); shake(5); SFX.boom();
+      const ex = (p.x - w.x) / (w.r + 6), ey = (p.y - w.y) / ((w.r + 6) * 0.62); if (!p.dead && ex * ex + ey * ey < 1) hurtPlayer(w.dmg);   // 그려진 타원과 같은 범위
+    }
+    ws.splice(i, 1);
+  }
+}
+// 바닥 예고: 빨간 테두리 안을 채움이 차오르고, 다 차면 공격이 온다.
+// top=false 는 바닥(채움), top=true 는 개체 위에 테두리만 한 번 더 그려 몬스터 무리에 가려도 보이게 한다.
+function drawWarns(c, T, top) {
+  for (const w of G.warns) {
+    if (w.t < 0) continue;
+    const k = clamp(w.t / w.dur, 0, 1), blink = 0.6 + 0.4 * Math.sin(T * 26);
+    c.save();
+    if (w.k === 'lane') {
+      const a = Math.atan2(w.uy, w.ux); c.translate(w.x, w.y); c.rotate(a);
+      if (!top) {
+        c.fillStyle = 'rgba(255,45,35,.24)'; c.fillRect(0, -w.w / 2, w.len, w.w);
+        c.fillStyle = 'rgba(255,45,35,.42)'; c.fillRect(0, -w.w / 2, w.len * k, w.w);
+      } else {
+        c.globalAlpha = 0.55 + 0.35 * blink; c.strokeStyle = '#ff3b2f'; c.lineWidth = 3; c.setLineDash([10, 6]); c.strokeRect(0, -w.w / 2, w.len, w.w); c.setLineDash([]);
+        c.fillStyle = '#ffd9cf'; for (let x = 30; x < w.len - 10; x += 46) { c.beginPath(); c.moveTo(x, -9); c.lineTo(x + 14, 0); c.lineTo(x, 9); c.closePath(); c.fill(); }
+      }
+    } else {
+      const r = w.r, ry = r * 0.62;
+      if (!top) {
+        c.fillStyle = 'rgba(255,45,35,.24)'; ell(c, w.x, w.y, r, ry); c.fill();
+        c.fillStyle = 'rgba(255,45,35,.48)'; ell(c, w.x, w.y, r * k, ry * k); c.fill();
+      } else {
+        c.globalAlpha = 0.55 + 0.35 * blink; c.strokeStyle = '#ff3b2f'; c.lineWidth = 3; ell(c, w.x, w.y, r, ry); c.stroke();
+        c.globalAlpha = 0.5; c.lineWidth = 2; ell(c, w.x, w.y, r * k, ry * k); c.stroke();
+      }
+    }
+    c.restore();
   }
 }
 function updateEnemies(dt) {
@@ -1800,7 +1891,7 @@ function updateEnemies(dt) {
       case 'bat': { const w = Math.sin(e.t * 4 + e.seed) * 0.9; mx = ux - uy * w; my = uy + ux * w; const m = Math.hypot(mx, my); mx /= m; my /= m; break; }
       case 'spitter':
         if (d < 140) { mx = -ux * 0.7; my = -uy * 0.7; } else if (d < 185) { mx = -uy * 0.5; my = ux * 0.5; }
-        e.cd -= dt; if (e.cd <= 0 && d < 250) { e.cd = 2.7 + rand(0.8); shootE(e, ux, uy, 112, e.dmg, '#b6f06a'); }
+        e.cd -= dt; if (e.cd <= 0 && d < 250) { e.cd = 3.8 + rand(1.4); shootE(e, ux, uy, 98, e.dmg, '#b6f06a'); }
         break;
       case 'bomber':
         if (e.prime > 0) { e.prime -= dt; sp = 0; if (e.prime <= 0) { g.fx.push({ k: 'boom', x: e.x, y: e.y, r: 52, t: 0, dur: 0.36, col: '#ff6b6b' }); burst(e.x, e.y - 8, '#ff9a7a', 10, 170); SFX.boom(); shake(4); if (d < 52) hurtPlayer(e.dmg); e.dead = true; g.kills++; dropGem(e.x, e.y, e.xp); continue; } }
@@ -1893,6 +1984,7 @@ function render() {
   // 바닥 레이어
   for (const s of g.shells) { const k = clamp(s.t / s.delay, 0, 1); c.strokeStyle = `rgba(255,70,60,${0.5 + 0.4 * Math.sin(T * 30)})`; c.lineWidth = 2; c.setLineDash([6, 5]); ell(c, s.x, s.y, s.r * (1.15 - k * 0.15), s.r * 0.5 * (1.15 - k * 0.15)); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(255,70,60,.16)'; ell(c, s.x, s.y, s.r * k, s.r * 0.5 * k); c.fill(); }
   for (const m of g.mines) drawMine(c, m, T);
+  drawWarns(c, T, false);
   for (const q of g.gems) if (q.x > cx - 10 && q.x < cx + VW + 10 && q.y > cy - 10 && q.y < cy + VH + 20) drawGem(c, q, T);
   for (const q of g.picks) drawPick(c, q, T);
   for (const b of g.bombers) shadow(c, b.x, b.y, 44, 0.2);
@@ -1924,6 +2016,7 @@ function render() {
   if (g.medic && g.medic.healing && p.visible && !p.dead) drawHealBeam(c, g.medic, p, T);
 
   for (const b of g.bullets) drawBullet(c, b);
+  drawWarns(c, T, true);
   for (const b of g.ebullets) drawEBullet(c, b, T);
   for (const n of g.nades) { if (n.t < 0) continue; const k = n.t / n.dur, x = lerp(n.x0, n.x1, k), y = lerp(n.y0, n.y1, k); shadow(c, x, y, 4, 0.2); sprC(c, 'i_grenade', x, y - 18 - Math.sin(k * Math.PI) * 42, 12, { rot: k * 9 }); }
   for (const s of g.shells) { if (s.t < s.rel) continue; const kk = clamp((s.t - s.rel) / (s.delay - s.rel), 0, 1), d = s.dir || 0; sprC(c, 'i_strike', s.x - d * (1 - kk) * 46, s.y - 14 - (1 - kk * kk) * 118, 30, { rot: -Math.PI / 4 - d * 0.6 * (1 - kk) }); }
@@ -2243,12 +2336,20 @@ function refreshGear() {
 }
 
 // ---------- 상점 / 설정
-const pullCost = n => Math.round(PULL_COST * n * (n >= 10 ? 0.9 : 1));
+const pullCost = (n, crate = 'n') => Math.round(CRATES[crate].cost * n * (n >= 10 ? 0.9 : 1));
+// 상자 설명에 지금 스테이지 기준 확률을 보여 준다
+function crateOdds(crate) {
+  const w = rarityWeights(save.best + 1, crate), t = w.reduce((a, b) => a + b, 0), pct = i => (w[i] / t * 100).toFixed(w[i] / t < 0.1 ? 1 : 0) + '%';
+  return crate === 'p' ? `고급 등급 이상만 나와요\n전설 ${pct(4)} · 영웅 ${pct(3)} · 희귀 ${pct(2)}\n10회 열면 영웅 이상 1개 보장` : `깬 스테이지가 높을수록 좋아져요\n전설 ${pct(4)} · 영웅 ${pct(3)} · 희귀 ${pct(2)}`;
+}
 const pullLog = [];            // 이번 접속에서 받은 보급 (최신이 앞)
 function refreshShop() {
   refreshWallet();
   setTxt('pull1Cost', fmt(pullCost(1))); setTxt('pull10Cost', fmt(pullCost(10)));
+  setTxt('pullP1Cost', fmt(pullCost(1, 'p'))); setTxt('pullP10Cost', fmt(pullCost(10, 'p')));
+  setTxt('crateOddsN', crateOdds('n')); setTxt('crateOddsP', crateOdds('p'));
   el('btnPull1').disabled = save.gems < pullCost(1); el('btnPull10').disabled = save.gems < pullCost(10);
+  el('btnPullP1').disabled = save.gems < pullCost(1, 'p'); el('btnPullP10').disabled = save.gems < pullCost(10, 'p');
   el('btnEnergyBuy').disabled = save.energy >= ENERGY_MAX || save.gems < ENERGY_REFILL_GEMS;
   const out = el('shopOut'); out.textContent = '';
   for (const e of pullLog) { const t = gearTile(e.it, 0, true); if (e.fresh) t.classList.add('fresh'); out.append(t); }
@@ -2283,12 +2384,16 @@ function refreshGemGrid() {
   });
 }
 function showGemShop() { setTab('Shop'); const g = el('gemSection'); if (g && g.scrollIntoView) g.scrollIntoView({ block: 'start' }); }
-function pull(n) {
-  const c = pullCost(n);
+function pull(n, crate = 'n') {
+  const c = pullCost(n, crate);
   if (save.gems < c) { SFX.deny(); toast('보석이 부족합니다. 아래 보석 상점에서 충전할 수 있어요'); showGemShop(); return; }
   if (save.inv.length + n > INV_CAP) { SFX.deny(); toast('보관함이 가득 찼습니다. 장비를 분해하세요'); return; }
   save.gems -= c; for (const e of pullLog) e.fresh = false;
-  const got = []; for (let i = 0; i < n; i++) got.push({ it: Object.assign({}, makeGear(save.best + 1)), fresh: true });
+  const got = [];
+  for (let i = 0; i < n; i++) {
+    const last = i === n - 1, need = crate === 'p' && n >= 10 && last && !got.some(e => e.it.r >= 3);   // 고급 10회: 마지막까지 영웅이 없으면 보장
+    got.push({ it: Object.assign({}, makeGear(save.best + 1, crate, need ? 3 : 0)), fresh: true });
+  }
   pullLog.unshift(...got); pullLog.length = Math.min(pullLog.length, 120);
   const top = Math.max(...got.map(e => e.it.r)); if (top >= 3) toast(`${RARITY[top].name} 등급 획득!`);
   writeSave(); SFX.buy(); refreshShop();
@@ -2422,6 +2527,7 @@ function bindUi() {
   tap('btnGdSell', () => { const it = gearById(gearSel); if (!it || save.eq[it.s] === it.id) return; const v = gearSell(it); save.inv.splice(save.inv.indexOf(it), 1); save.coins += v; gearSel = 0; writeSave(); SFX.coin(); toast(`분해 +${fmt(v)} 코인`); refreshGear(); });
   tap('btnAutoEq', () => { for (let i = 0; i < SLOTS.length; i++) { let best = null; for (const it of save.inv) if (it.s === i && (!best || it.r * 100 + it.lv > best.r * 100 + best.lv)) best = it; save.eq[i] = best ? best.id : 0; } writeSave(); SFX.buy(); refreshGear(); });
   tap('btnPull1', () => pull(1)); tap('btnPull10', () => pull(10));
+  tap('btnPullP1', () => pull(1, 'p')); tap('btnPullP10', () => pull(10, 'p'));
   tap('btnShopClear', () => { pullLog.length = 0; SFX.click(); refreshShop(); });
   tap('curGems', () => { SFX.tab(); showGemShop(); });                                         // 상단 보석 캡슐 = 상점의 보석 상점
   tap('btnDaily', () => { if (save.daily === today()) return; save.daily = today(); save.gems += DAILY_GEMS; writeSave(); SFX.coin(); toast(`보석 +${DAILY_GEMS}`); refreshShop(); });
