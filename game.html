@@ -203,22 +203,22 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 /* ---- HUD */
 #hud { position: absolute; inset: var(--st) 0 var(--sb) 0; pointer-events: none; }
 #hud button { pointer-events: auto; }
-#xpbar { position: relative; width: 100%; height: 1em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .14em 0 var(--ink); }   /* 체력 바 바로 아래의 경험치 바 */
+#xpbar { position: relative; width: 100%; height: .95em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .14em 0 var(--ink); }   /* 체력 바 바로 아래의 경험치 바 */
 #xpbar i { display: block; height: 100%; width: 0; background: var(--energy); border-radius: .16em; }
 .hud-top { position: absolute; left: 3.4em; right: 3.4em; top: .55em; display: flex; flex-direction: column; align-items: center; gap: .3em; pointer-events: none; }
 .hud-top b { font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--fg); white-space: nowrap; }
-.hud-pause { position: absolute; right: .6em; top: 1em; }
-.hud-row .hud-right { margin-top: .7em; }
-.hud-row { position: absolute; left: .6em; right: .6em; top: 3.15em; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: .7em; }
-.hud-left { display: flex; flex-direction: column; gap: .45em; align-items: stretch; max-width: 15.5em; }
+.hud-pause { position: absolute; right: .6em; top: .75em; }
+.hud-row { position: absolute; left: .6em; right: .6em; top: 3.4em; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: .5em; }
+.hud-left { display: flex; align-items: center; gap: .45em; max-width: 15.5em; padding: .3em .5em .3em .3em; background: rgba(10, 15, 28, .55); border: .13em solid var(--ink); border-radius: .7em; }
+.hud-bars { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: .3em; }
 #xpbar span { position: absolute; inset: 0; display: flex; align-items: center; padding-left: .5em; font-family: var(--font-display); font-weight: 400; font-size: .66em; color: #fff; white-space: nowrap; }
-.xp-wrap { position: relative; padding-right: 2.2em; }
-.lv-badge { position: absolute; right: -.25em; top: 50%; width: 2.9em; height: 2.9em; margin-top: -1.5em; display: grid; place-items: center; pointer-events: none; }
+.lv-badge { position: relative; flex: 0 0 auto; width: 2.75em; height: 2.75em; display: grid; place-items: center; pointer-events: none; }
 .lv-badge canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .55)); }
 .lv-badge b { position: relative; margin-top: .55em; font-family: var(--font-display); font-weight: 400; font-size: 1em; color: #fff; font-variant-numeric: tabular-nums; }
 .lv-badge.max b { font-size: .72em; color: var(--hazard); margin-top: .75em; }
-.hud-right { display: flex; flex-direction: column; gap: .4em; align-items: flex-end; }
-#hpbar { position: relative; width: 100%; height: 1.3em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .16em 0 var(--ink); }
+.hud-right { display: flex; flex-direction: column; justify-content: space-between; gap: .3em; align-items: stretch; }
+.hud-right .chip { justify-content: flex-end; min-width: 4.6em; }
+#hpbar { position: relative; width: 100%; height: 1.2em; background: var(--ink); border: .13em solid var(--ink); border-radius: .35em; overflow: hidden; box-shadow: 0 .16em 0 var(--ink); }
 #hpbar i { display: block; height: 100%; width: 100%; background: var(--heal); border-radius: .2em; }
 #hpbar.low i { background: var(--danger); }
 #hpbar span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 400; font-size: .7em; color: #fff; text-shadow: 0 .08em 0 var(--ink), 0 -.08em 0 var(--ink), .08em 0 0 var(--ink), -.08em 0 0 var(--ink); font-variant-numeric: tabular-nums; }
@@ -394,10 +394,10 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       <button id="btnPause" class="btn sq hud-pause" type="button" aria-label="일시정지"><svg viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z" fill="currentColor"/></svg></button>
       <div class="hud-row">
         <div class="hud-left">
-          <div id="hpbar"><i id="hpFill"></i><span id="hpTxt">100</span></div>
-          <div class="xp-wrap">
+          <div class="lv-badge" id="lvBadge" aria-label="레벨 1"><canvas id="lvHelm" width="96" height="96" aria-hidden="true"></canvas><b id="lvNum" class="outline">1</b></div>
+          <div class="hud-bars">
+            <div id="hpbar"><i id="hpFill"></i><span id="hpTxt">100</span></div>
             <div id="xpbar" aria-label="경험치"><i id="xpFill"></i><span id="xpTxt" class="outline">이병</span></div>
-            <div class="lv-badge" id="lvBadge" aria-label="레벨 1"><canvas id="lvHelm" width="96" height="96" aria-hidden="true"></canvas><b id="lvNum" class="outline">1</b></div>
           </div>
         </div>
         <div class="hud-right">
@@ -494,7 +494,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.40', VERSION_DATE = '2026.10.06', VERSION_NOTE = '해병 대사 다듬기 (착륙·스팀팩·분대 대사 조정)';   // 게시할 때마다 올린다
+const VERSION = 'v0.41', VERSION_DATE = '2026.10.06', VERSION_NOTE = '전투 HUD 정리: 헬멧 레벨과 체력·경험치 바를 한 패널로';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
