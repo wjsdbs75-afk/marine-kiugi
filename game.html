@@ -727,7 +727,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.66', VERSION_DATE = '2026.10.06', VERSION_NOTE = '적 기지 스테이지(5스테이지마다) · 작은 지도 · 보스전 잡몹 감소';   // 게시할 때마다 올린다
+const VERSION = 'v0.67', VERSION_DATE = '2026.10.06', VERSION_NOTE = '적 기지 스테이지: 시작부터 기지 여러 곳 · 라운드마다 전초기지 증설';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1789,10 +1789,16 @@ function shake(v) { G.shake = Math.max(G.shake, v); }
 function startRound(n) {
   G.round = n; G.roundT = 0;
   if (n === ROUNDS) { G.banner = { text: 'BOSS ROUND', sub: G.st.boss + ' 출현!', t: 0, dur: 2.3, warn: true }; SFX.warn(); say('boss'); }
-  else { G.banner = { text: 'ROUND ' + n, sub: n === 1 ? (G.base ? '적 기지 발견! 건물을 모두 부숴라' : `STAGE ${G.stage} · ${G.st.name}`) : (n === 5 ? '정예 몬스터 출현!' : ''), t: 0, dur: 1.5 }; }
+  else {
+    const grown = growBase(n), subs = [];
+    if (n === 1) subs.push(G.base ? '적 기지 ' + G.base.sites.length + '곳 발견! 모두 부숴라' : `STAGE ${G.stage} · ${G.st.name}`);
+    if (n === 5) subs.push('정예 몬스터 출현!');
+    if (grown) subs.push('적 전초기지 ' + grown + '곳 증설!');
+    G.banner = { text: 'ROUND ' + n, sub: subs.join(' · '), t: 0, dur: grown ? 1.9 : 1.5 };
+  }
   if (n === 5) spawnElite();
   // 라운드 시작 무리: 라운드가 열리자마자 화면 가장자리에서 한 무리가 몰려온다 (초반이 비어 보이지 않게)
-  if (n < ROUNDS) { const k = 6 + 2 * n + (CHAPTER(G.stage) - 1) * 2; for (let i = 0; i < k && G.enemies.length < 150; i++) { const q = spawnPos(); makeEnemy(pickType(), q.x, q.y); } }
+  if (n < ROUNDS) { const k = 6 + 2 * n + (CHAPTER(G.stage) - 1) * 2; for (let i = 0; i < k && mobN() < 150; i++) { const q = spawnPos(); makeEnemy(pickType(), q.x, q.y); } }
 }
 function spawnPos() {
   const ar = G.arena; if (ar && !ar.out) { const q = spawnPosView(); q.x = clamp(q.x, ar.x - ar.hw + 14, ar.x + ar.hw - 14); q.y = clamp(q.y, ar.y - ar.hh + 14, ar.y + ar.hh - 14); return q; }
@@ -1823,11 +1829,11 @@ function pickType() {
   return mix[0][0];
 }
 function spawnTick(dt) {
-  if (G.enemies.length >= (G.boss ? 30 : 150)) return;
+  if (mobN() >= (G.boss ? 30 : 150)) return;
   const r = G.round;
   // 몹 수: 1라운드부터 초당 약 3마리, 10라운드쯤 초당 15마리 (예전 1.4 → 10)
   // 보스가 나오면 보스에 집중하도록 잡몹은 약 1/4 (간격 3배, 한 번에 1마리). 기지를 초토화한 판은 조금 덜 나온다
-  const interval = Math.max(0.26, 0.66 - 0.04 * r) * (G.boss ? 3 : 1) * (G.base && G.base.cleared ? 1.4 : 1);
+  const interval = Math.max(0.26, 0.66 - 0.04 * r) * (G.boss ? 3 : 1) * (G.base && G.base.left <= 0 ? 1.4 : 1);
   const n = G.boss ? 1 : 2 + Math.floor(r / 4) + (CHAPTER(G.stage) >= 3 ? 1 : 0);
   G.spawnAcc += dt;
   while (G.spawnAcc >= interval) { G.spawnAcc -= interval; for (let i = 0; i < n; i++) { const q = spawnPos(); makeEnemy(pickType(), q.x, q.y); } }
@@ -1842,15 +1848,51 @@ const BLD = {
 const BLD_NAME = { hq: '본부', spawn: '생산 건물', tower: '방어 타워', gen: '발전기', depot: '보급 창고', wall: '성벽', barr: '바리케이드' };
 const BLD_MAIN = k => k !== 'wall' && k !== 'barr';
 const bldSpr = (ch, k) => (k === 'hq' || k === 'spawn' || k === 'tower' ? 'bd' : 'bx') + ch + '_' + k;
+// 기지 하나 = 거점(site). 본진 1곳 + 전초기지 여러 곳으로 시작하고, 라운드가 넘어갈 때마다 전초기지가 새로 생긴다
+const OUTPOSTS = [
+  [['spawn', 0, 0], ['tower', -80, 90], ['tower', 80, 90], ['gen', 0, -80], ['barr', -40, 132], ['barr', 40, 132]],   // 병영
+  [['tower', -70, 10], ['tower', 70, 10], ['tower', 0, -70], ['gen', 0, 50], ['wall', -62, 100], ['wall', 62, 100]],   // 포대
+  [['spawn', -75, 0], ['spawn', 75, 0], ['gen', 0, -70], ['depot', 0, 70]],                                            // 둥지
+  [['depot', -60, 10], ['tower', 60, 10], ['tower', 0, -75], ['gen', 0, 70], ['barr', -60, 70]],                       // 보급소
+];
+const BASE_MAX_BLD = 110;                                  // 살아 있는 건물이 이보다 많으면 새 전초기지는 생기지 않는다
+const outpostsAtStart = s => Math.min(6, 2 + s / 5);       // 5스테이지 3곳 → 20스테이지부터 6곳
+const outpostsPerRound = (s, n) => 1 + (s >= 15 && n % 2 === 0 ? 1 : 0) + (s >= 30 && n % 3 === 0 ? 1 : 0);
+const mobN = () => G.enemies.length - (G.base ? G.base.alive : 0);   // 건물을 뺀 몹 수
+function putBld(site, k, x, y, rise) {
+  const g = G, s = g.stage, ch = g.base.ch, d = BLD[k], hp = d[3] * stageHpMul(s) * (1 + 0.04 * (s - 5)) * (1 + 0.06 * (g.round - 1));
+  const e = { type: 'bld', bld: k, site, x, y, hp, maxHp: hp, spd: 0, dmg: 0, r: d[2], xp: d[5], t: 0, seed: rand(10), flash: 0, kx: 0, ky: 0, face: 1,
+    cd: rand(1, 3), prime: 0, elite: false, dead: false, c1: ['#9b5de5', '#8fe3ff', '#ff6a3a'][ch - 1], c2: '#ffd24a', rise: rise ? 0.7 + rand(0.3) : 0 };
+  g.enemies.push(e); g.base.alive++;
+  if (k === 'gen') site.gens++;
+  if (BLD_MAIN(k)) { site.total++; site.left++; g.base.total++; g.base.left++; }
+  return e;
+}
+function newSite(x, y, main, rise) {
+  const site = { x, y, main, total: 0, left: 0, gens: 0, ping: rise ? 3 : 0 };
+  G.base.sites.push(site); return site;
+}
+// 해병에게서 dmin~dmax 떨어진, 다른 거점과 겹치지 않는 자리
+function siteSpot(dmin, dmax) {
+  const p = G.p; let best = null, bs = -1;
+  for (let i = 0; i < 40; i++) {
+    const a = rand(TAU), r = rand(dmin, dmax), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
+    let near = 1e9; for (const s of G.base.sites) near = Math.min(near, Math.hypot(s.x - x, s.y - y));
+    if (near > 430) return { x, y };
+    if (near > bs) { bs = near; best = { x, y }; }
+  }
+  return best;
+}
+function placeOutpost(dmin, dmax, rise) {
+  const q = siteSpot(dmin, dmax), s = G.stage, lay = pick(OUTPOSTS), site = newSite(q.x, q.y, false, rise);
+  for (const [k, ox, oy] of lay) putBld(site, k, q.x + ox, q.y + oy, rise);
+  if (s >= 20 && lay !== OUTPOSTS[1]) putBld(site, 'tower', q.x + rand(-30, 30), q.y + 120, rise);   // 후반에는 타워가 하나 더
+  return site;
+}
 function placeBase() {
   const g = G, p = g.p, s = g.stage, ch = CHAPTER(s), bx = p.x + rand(-40, 40), by = p.y - 560;
-  g.base = { x: bx, y: by, ch, total: 0, left: 0, cleared: false };
-  const put = (k, x, y) => {
-    const d = BLD[k], hp = d[3] * stageHpMul(s) * (1 + 0.04 * (s - 5));
-    const e = { type: 'bld', bld: k, x, y, hp, maxHp: hp, spd: 0, dmg: 0, r: d[2], xp: d[5], t: 0, seed: rand(10), flash: 0, kx: 0, ky: 0, face: 1,
-      cd: rand(1, 3), prime: 0, elite: false, dead: false, c1: ['#9b5de5', '#8fe3ff', '#ff6a3a'][ch - 1], c2: '#ffd24a' };
-    g.enemies.push(e); if (BLD_MAIN(k)) { g.base.total++; g.base.left++; }
-  };
+  g.base = { x: bx, y: by, ch, total: 0, left: 0, alive: 0, cleared: false, sites: [] };
+  const site = newSite(bx, by, true, false), put = (k, x, y) => putBld(site, k, x, y, false);
   put('hq', bx, by);
   put('spawn', bx - 150, by + 30); put('spawn', bx + 150, by + 30); if (s >= 20) put('spawn', bx, by - 120);
   put('tower', bx - 95, by + 150); put('tower', bx + 95, by + 150); if (s >= 10) put('tower', bx, by + 200); if (s >= 25) { put('tower', bx - 230, by + 90); put('tower', bx + 230, by + 90); }
@@ -1858,15 +1900,22 @@ function placeBase() {
   put('depot', bx - 240, by - 40); put('depot', bx + 240, by - 40);
   for (const x of [-235, -165, 165, 235]) put('wall', bx + x, by + 255);
   put('barr', bx - 70, by + 268); put('barr', bx + 70, by + 268);
+  for (let i = 0; i < outpostsAtStart(s); i++) placeOutpost(520, 1250, false);
 }
-const genAlive = () => G.enemies.some(e => !e.dead && e.bld === 'gen');
+// 라운드가 바뀔 때 새 전초기지가 솟아오른다 (보스 라운드 제외)
+function growBase(n) {
+  const g = G; if (!g.base || n <= 1 || n >= ROUNDS) return 0;
+  let k = 0; for (let i = outpostsPerRound(g.stage, n); i > 0 && g.base.alive < BASE_MAX_BLD; i--) { placeOutpost(600, 1000, true); k++; }
+  return k;
+}
 function bldAI(e, dt, d, ux, uy) {
   const g = G; if (g.boss) return;                         // 보스전 동안 기지는 멈춘다
-  if (e.bld === 'tower') {                                 // 방어 타워: 발전기가 하나라도 남아 있어야 쏜다
-    if (d > 310 || !genAlive()) return;
+  if (e.rise > 0) { e.rise -= dt; if (e.rise <= 0 && G.parts.length < 230) dust(e.x, e.y, 6); return; }   // 솟아오르는 중
+  if (e.bld === 'tower') {                                 // 방어 타워: 같은 거점의 발전기가 하나라도 남아 있어야 쏜다
+    if (d > 310 || !(e.site && e.site.gens > 0)) return;
     e.cd -= dt; if (e.cd <= 0) { e.cd = 1.7 + rand(0.5); const col = ['#b6f06a', '#8fe3ff', '#ff5a3a'][CHAPTER(g.stage) - 1]; shootE(e, ux, uy, 135, 9 * stageDmgMul(g.stage), col); e.fire = 0.25; }
   } else if (e.bld === 'spawn' || e.bld === 'hq') {        // 생산 건물·본부: 가까이 오면 몹을 뽑아낸다
-    if (d > 640 || g.enemies.length > 140) return;
+    if (d > 640 || mobN() > 140) return;
     e.cd -= dt; if (e.cd > 0) return;
     if (e.bld === 'hq') { e.cd = 9 + rand(2); const q = { x: e.x + ux * (e.r + 20), y: e.y + uy * (e.r + 20) }; makeEnemy(pickType(), q.x, q.y, { hpMul: 4, scale: 1.3, xpMul: 4, elite: true }); }
     else { e.cd = 4.2 + rand(1.2); for (let i = 0; i < 2 + (g.stage >= 15 ? 1 : 0); i++) makeEnemy(pickType(), e.x + ux * (e.r + 14) + rand(-16, 16), e.y + uy * (e.r + 14) + rand(-16, 16)); }
@@ -1882,10 +1931,19 @@ function onBuildingDead(e) {
   if (e.bld === 'depot') dropPick('chest', e.x, e.y, 0);
   g.ruins.push({ x: e.x, y: e.y, h: d[1] * 0.75, k: e.bld, t: 0 });
   floatText(e.x, e.y - d[1] - 10, BLD_NAME[e.bld] + ' 파괴!', '#ffd24a', e.bld === 'hq' ? 18 : 14, 1.1);
-  if (g.base && BLD_MAIN(e.bld) && --g.base.left <= 0 && !g.base.cleared) {
-    g.base.cleared = true; g.banner = { text: '기지 초토화!', sub: '적 기지를 모두 무너뜨렸다', t: 0, dur: 2.4 };
-    const bonus = Math.round(40 * g.stage * g.p.coinMul); g.coins += bonus; floatText(g.p.x, g.p.y - 70, '+' + fmt(bonus) + ' 코인', '#ffd24a', 16, 1.6); SFX.clear(); say('clear');
+  if (!g.base) return;
+  g.base.alive--; const st = e.site;
+  if (st && e.bld === 'gen') st.gens--;
+  if (!BLD_MAIN(e.bld)) return;
+  g.base.left--;
+  if (st && --st.left <= 0) {          // 거점 하나를 무너뜨렸다
+    const bonus = Math.round((st.main ? 40 : 12) * g.stage * g.p.coinMul); g.coins += bonus; g.base.razed = (g.base.razed || 0) + 1;
+    floatText(g.p.x, g.p.y - 70, '+' + fmt(bonus) + ' 코인', '#ffd24a', 16, 1.6);
+    if (g.base.left <= 0) { g.banner = { text: '기지 초토화!', sub: '보이는 적 기지를 모두 무너뜨렸다', t: 0, dur: 2.4 }; SFX.clear(); say('clear'); }
+    else if (st.main) { g.banner = { text: '본진 초토화!', sub: '남은 전초기지 ' + g.base.sites.filter(q => q.left > 0).length + '곳', t: 0, dur: 2.2 }; SFX.clear(); say('clear'); }
+    else floatText(st.x, st.y - 90, '전초기지 초토화!', '#ffd24a', 17, 1.4);
   }
+  g.base.cleared = g.base.left <= 0;
 }
 function updateBldBooms(dt) {
   const g = G; if (!g.bldBooms) return;
@@ -1902,14 +1960,18 @@ function bldPush(o, pad) {
 function drawBuilding(c, e) {
   const d = BLD[e.bld], ch = CHAPTER(G.stage), name = bldSpr(ch, e.bld), k = e.hp / e.maxHp, t = e.t + e.seed;
   shadow(c, e.x, e.y + 2, e.r * 1.25, 0.3);
-  const sq = e.fire > 0 ? 1 + e.fire * 0.12 : 1;
+  let sq = e.fire > 0 ? 1 + e.fire * 0.12 : 1;
+  if (e.rise > 0) {        // 새 전초기지: 땅에서 솟아오른다
+    const u = clamp(1 - e.rise / 0.8, 0.05, 1); sq *= 1 - (1 - u) * (1 - u);
+    if (Math.random() < 0.5 && G.parts.length < 220) dust(e.x + rand(-e.r, e.r) * 0.8, e.y, 1);
+  }
   if (ATLAS.map[name]) {
     spr(c, name, e.x, e.y, d[1] * sq, e.flash > 0 ? { v: 'white', alpha: 0.85 } : null);
     if (e.flash > 0) spr(c, name, e.x, e.y, d[1] * sq, { alpha: 0.45 });
   } else { c.fillStyle = e.c1; c.strokeStyle = OUT; c.lineWidth = 2; rrect(c, e.x - e.r, e.y - d[1], e.r * 2, d[1], 6); c.fill(); c.stroke(); }
   if (k < 0.6 && Math.random() < 0.25 && G.parts.length < 220) G.parts.push({ x: e.x + rand(-e.r, e.r) * 0.6, y: e.y - d[1] * rand(0.4, 0.8), vx: rand(-8, 8), vy: rand(-40, -24), g: 0, life: 1, max: 1, size: rand(5, 9), col: 'rgba(60,60,70,.55)' });
   if (k < 0.3 && Math.random() < 0.35 && G.parts.length < 220) G.parts.push({ x: e.x + rand(-e.r, e.r) * 0.5, y: e.y - d[1] * rand(0.3, 0.7), vx: rand(-10, 10), vy: rand(-60, -30), g: 0, life: 0.5, max: 0.5, size: rand(3, 6), col: Math.random() < 0.5 ? '#ff9a2e' : '#ffd24a' });
-  if (k < 1) {     // 체력 막대
+  if (k < 1 && !(e.rise > 0)) {     // 체력 막대
     const w = Math.max(30, e.r * 1.7), y = e.y - d[1] - 8;
     c.fillStyle = '#0a0f1c'; c.fillRect(e.x - w / 2 - 1.5, y - 1.5, w + 3, 7); c.fillStyle = e.bld === 'hq' ? '#ff5340' : '#ff9a2e'; c.fillRect(e.x - w / 2, y, w * k, 4);
   }
@@ -3310,7 +3372,7 @@ function showResult() {
 // ---------- HUD
 const finePointer = !!(window.matchMedia && window.matchMedia('(pointer: fine)').matches);
 // 작은 지도: 해병 주변 반경 MM_R. 범위 밖 건물은 가장자리에 붙여 방향을 알려 준다
-const MM_R = 680, MM_COL = { hq: '#ff3b2f', spawn: '#ff9a2e', tower: '#ff5a8a', gen: '#5fd8ff', depot: '#ffd24a', wall: '#8a93a8', barr: '#8a93a8' };
+const MM_R = 950, MM_COL = { hq: '#ff3b2f', spawn: '#ff9a2e', tower: '#ff5a8a', gen: '#5fd8ff', depot: '#ffd24a', wall: '#8a93a8', barr: '#8a93a8' };
 function drawMinimap() {
   const g = G, cv3 = el('minimap'); if (g.boss) { cv3.hidden = true; return; } cv3.hidden = false;
   const c = cv3.getContext('2d'), S = 168, h = S / 2, k = (h - 8) / MM_R, p = g.p;
@@ -3325,6 +3387,11 @@ function drawMinimap() {
     const s = e.bld === 'hq' ? 13 : BLD_MAIN(e.bld) ? 8 : 6;
     c.fillStyle = MM_COL[e.bld]; c.strokeStyle = '#0a0f1c'; c.lineWidth = 2; c.beginPath(); c.rect(x - s / 2, y - s / 2, s, s); c.fill(); c.stroke();
     if (out && Math.sin(T * 8) > 0) { c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.strokeRect(x - s / 2 - 2, y - s / 2 - 2, s + 4, s + 4); }
+  }
+  if (g.base) for (const st of g.base.sites) {           // 새로 생긴 전초기지: 퍼지는 원
+    if (!(st.ping > 0) || st.left <= 0) continue; st.ping -= 1 / 30;
+    let [x, y] = at(st.x, st.y); if (x < 8 || y < 8 || x > S - 8 || y > S - 8) { const a = Math.atan2(y - h, x - h); x = h + Math.cos(a) * (h - 8); y = h + Math.sin(a) * (h - 8); }
+    const u = (T * 1.6) % 1; c.strokeStyle = 'rgba(255,210,74,' + (1 - u).toFixed(2) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 6 + u * 16, 0, TAU); c.stroke();
   }
   const a = p.aim || 0; c.save(); c.translate(h, h); c.rotate(a);      // 해병: 가운데 화살표 (조준 방향)
   c.fillStyle = '#7fd0ff'; c.strokeStyle = '#0a0f1c'; c.lineWidth = 2; c.beginPath(); c.moveTo(8, 0); c.lineTo(-5, -5.5); c.lineTo(-2, 0); c.lineTo(-5, 5.5); c.closePath(); c.fill(); c.stroke(); c.restore();
