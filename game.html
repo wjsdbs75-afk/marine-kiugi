@@ -143,6 +143,35 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55), 0 0 0 .14em #fff; }
 .tab.main[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
 .tab.main:active { transform: scale(.95); }
+/* ---- 병영 훈련: 아래에서 위로 올라가는 단계 */
+.train-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .3em; }
+.train-sum div { display: flex; flex-direction: column; align-items: center; padding: .25em .1em; background: var(--steel-2); border-radius: .45em; }
+.train-sum canvas { width: 1.7em; height: 1.7em; }
+.train-sum b { font-family: var(--font-display); font-weight: 400; font-size: .82em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.train-sum span { font-size: .6em; color: var(--fg-dim); white-space: nowrap; }
+.train-track { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: .3em; padding: .2em .4em .2em 0; background: rgba(5, 7, 15, .35); border-radius: .5em;
+  -webkit-mask-image: linear-gradient(to top, #000 70%, transparent); mask-image: linear-gradient(to top, #000 70%, transparent); }
+.tnode { position: relative; display: flex; align-items: center; gap: .55em; padding: .2em .5em .2em 0; flex: none; }
+.tnode::before { content: ''; position: absolute; left: 1.6em; top: -.35em; bottom: 50%; width: .22em; margin-left: -.11em; background: rgba(169, 182, 214, .25); }
+.tnode.done::before { background: var(--hazard); }
+.tnode .tn-no { margin-left: auto; text-align: right; font-family: var(--font-display); font-weight: 400; font-size: .72em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+.tnode .tn-dot { position: relative; z-index: 1; width: 2.2em; height: 2.2em; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--steel-2); border: .14em solid var(--ink); margin-left: .5em; }
+.tnode .tn-dot canvas { width: 1.6em; height: 1.6em; opacity: .5; filter: grayscale(.6); }
+.tnode b { font-family: var(--font-display); font-weight: 400; font-size: .92em; color: var(--fg-dim); }
+.tnode.done .tn-dot { background: #2a3d2e; border-color: var(--heal); }
+.tnode.done .tn-dot canvas { opacity: .85; filter: none; }
+.tnode.done b { color: var(--fg); }
+.tnode.next .tn-dot { background: var(--hazard); box-shadow: 0 0 0 .18em rgba(255, 194, 31, .35); animation: tpulse 1s ease-in-out infinite; }
+.tnode.next .tn-dot canvas { opacity: 1; filter: none; }
+.tnode.next b { color: var(--hazard); }
+.tnode.mile .tn-dot { width: 2.6em; height: 2.6em; margin-left: .3em; border-color: var(--hazard); }
+.tnode.mile b::after { content: attr(data-mile); margin-left: .5em; font-size: .78em; color: var(--hazard); }
+.tnode.pop .tn-dot { animation: tpop .35s ease-out; }
+@keyframes tpulse { 50% { transform: scale(1.08); } }
+@keyframes tpop { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.train-btn { align-self: stretch; display: flex; align-items: center; justify-content: center; }
+.train-btn small .coin-dot { width: 1.1em; height: 1.1em; }
+@media (prefers-reduced-motion: reduce) { .tnode.next .tn-dot, .tnode.pop .tn-dot { animation: none; } }
 /* ---- 상점 */
 .shop-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .6em; margin: 0 -.3em; padding: .1em .3em .7em; -webkit-overflow-scrolling: touch; }
 .shop-scroll > * { flex: none; }
@@ -351,8 +380,11 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       </div>
 
       <div id="pageUp" class="page pane" hidden>
-        <div class="pane-head"><h2>병영 강화</h2></div>
-        <div class="rows" id="metaRows"></div>
+        <div class="pane-head"><h2>병영 훈련</h2><span class="chip mini" id="trainLv">훈련 0 / 140</span></div>
+        <div class="train-sum" id="trainSum"></div>
+        <div class="train-track" id="trainTrack" aria-label="훈련 단계"></div>
+        <button id="btnTrain" class="btn gold big train-btn" type="button"><span>훈련</span><small class="go-cost"><span class="coin-dot"></span><b id="trainCost">30</b></small></button>
+        <p class="note" id="trainNote">덜 오른 능력부터 자동으로 올라요 · 꾹 누르면 연속</p>
       </div>
 
       <div id="pageShop" class="page pane shop" hidden>
@@ -520,7 +552,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.44', VERSION_DATE = '2026.10.06', VERSION_NOTE = '보스 공격 예고 표시와 새 패턴, 하단 탭 정리, 고급 장비 상자 추가';   // 게시할 때마다 올린다
+const VERSION = 'v0.45', VERSION_DATE = '2026.10.06', VERSION_NOTE = '병영 강화를 버튼 하나로 올리는 훈련 트랙으로 (능력은 자동으로 고르게 상승)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2236,11 +2268,49 @@ function metaRow(m, redraw) {
   });
   row.append(b); return row;
 }
-function refreshBarracks() {
+// 병영 훈련: 버튼 하나로 단계를 올린다. 단계마다 진행률(레벨/최대)이 가장 낮은 능력이 자동으로 1 오른다.
+const TRAIN_IDS = ['atk', 'hp', 'rate', 'def', 'gold', 'xp', 'spd'];
+const TRAIN = TRAIN_IDS.map(id => METAS.find(m => m.id === id));
+const TRAIN_MAX = TRAIN.reduce((a, m) => a + m.max, 0);
+const TRAIN_SHORT = { atk: ['공격력', 10, '%'], hp: ['체력', 10, '%'], rate: ['연사', 3, '%'], def: ['피해 감소', 0.7, ''], gold: ['코인', 10, '%'], xp: ['경험치', 5, '%'], spd: ['이속', 2, '%'] };
+const trainLv = (lv = save.meta) => TRAIN.reduce((a, m) => a + (lv[m.id] || 0), 0);
+const trainCost = t => Math.round(30 * Math.pow(1.05, t));
+function trainNext(lv) {
+  let best = null, bp = 2;
+  for (const m of TRAIN) { const v = lv[m.id] || 0; if (v >= m.max) continue; const pr = v / m.max; if (pr < bp - 1e-9) { bp = pr; best = m; } }
+  return best;
+}
+const trainTxt = (id, n = 1) => { const t = TRAIN_SHORT[id], v = +(t[1] * n).toFixed(1); return id === 'def' ? `${t[0]} ${v}` : `${t[0]} +${v}${t[2]}`; };
+const TRAIN_RANKS = ['훈련병', '이병', '일병', '상병', '병장', '하사', '중사', '상사', '소위', '중위', '대위', '소령', '중령', '대령', '준장'];
+function refreshBarracks(pop) {
   refreshWallet();
-  const box = el('metaRows'); const top = box.scrollTop; box.textContent = '';
-  for (const m of METAS) if (!m.grp) box.append(metaRow(m, refreshBarracks));
-  box.scrollTop = top;
+  const t = trainLv(), done = t >= TRAIN_MAX, cost = trainCost(t);
+  setTxt('trainLv', `훈련 ${t} / ${TRAIN_MAX}`);
+  // 지금까지 오른 효과 합계
+  const sum = el('trainSum'); sum.textContent = '';
+  for (const m of TRAIN) { const t2 = TRAIN_SHORT[m.id], v = +(t2[1] * (save.meta[m.id] || 0)).toFixed(1), d = mk('div'); d.append(iconCanvas(m.id), mk('b', '', m.id === 'def' ? `-${v}` : `+${v}${t2[2]}`), mk('span', '', t2[0])); sum.append(d); }
+  // 단계 트랙: 지난 3단계 + 다음 단계부터 앞으로 7단계 (아래가 과거, 위가 미래)
+  const tr = el('trainTrack'); tr.textContent = '';
+  const sim = Object.assign({}, save.meta), future = [];
+  for (let k = 0; k < 8 && t + k < TRAIN_MAX; k++) { const m = trainNext(sim); if (!m) break; future.push(m.id); sim[m.id] = (sim[m.id] || 0) + 1; }
+  const hist = (save.trainHist || []).slice(-3);
+  const node = (no, id, cls) => {
+    const n = mk('div', 'tnode ' + cls + (no % 10 === 0 ? ' mile' : '')); const dot = mk('span', 'tn-dot'); dot.append(iconCanvas(id));
+    const label = mk('b', '', trainTxt(id)); if (no % 10 === 0) label.dataset.mile = `${TRAIN_RANKS[Math.min(TRAIN_RANKS.length - 1, no / 10)]} 달성`;
+    n.append(dot, label, mk('span', 'tn-no', String(no))); return n;
+  };
+  hist.forEach((id, k) => tr.append(node(t - hist.length + k + 1, id, 'done' + (pop && k === hist.length - 1 ? ' pop' : ''))));
+  future.forEach((id, k) => tr.append(node(t + k + 1, id, k === 0 ? 'next' : '')));
+  const b = el('btnTrain');
+  if (done) { b.disabled = true; b.firstChild.textContent = '훈련 완료'; setTxt('trainCost', 'MAX'); }
+  else { b.disabled = save.coins < cost; b.firstChild.textContent = '훈련'; setTxt('trainCost', fmt(cost)); }
+}
+function doTrain() {
+  const t = trainLv(), m = trainNext(save.meta), cost = trainCost(t);
+  if (!m || save.coins < cost) { SFX.deny(); return false; }
+  save.coins -= cost; save.meta[m.id] = (save.meta[m.id] || 0) + 1;
+  save.trainHist = (save.trainHist || []).concat(m.id).slice(-3);
+  writeSave(); SFX.buy(); refreshBarracks(true); return true;
 }
 
 // ---------- 분대: 출격 때 함께 내려오는 분대원과 의무병
@@ -2527,6 +2597,15 @@ function bindUi() {
   tap('btnGdSell', () => { const it = gearById(gearSel); if (!it || save.eq[it.s] === it.id) return; const v = gearSell(it); save.inv.splice(save.inv.indexOf(it), 1); save.coins += v; gearSel = 0; writeSave(); SFX.coin(); toast(`분해 +${fmt(v)} 코인`); refreshGear(); });
   tap('btnAutoEq', () => { for (let i = 0; i < SLOTS.length; i++) { let best = null; for (const it of save.inv) if (it.s === i && (!best || it.r * 100 + it.lv > best.r * 100 + best.lv)) best = it; save.eq[i] = best ? best.id : 0; } writeSave(); SFX.buy(); refreshGear(); });
   tap('btnPull1', () => pull(1)); tap('btnPull10', () => pull(10));
+  // 훈련 버튼: 한 번 누르면 1단계, 꾹 누르고 있으면 점점 빠르게 연속 훈련
+  (() => {
+    const b = el('btnTrain'); let tm = 0, iv = 0;
+    const stop = () => { clearTimeout(tm); tm = 0; };
+    const loop = () => { if (!doTrain()) return stop(); iv = Math.max(70, iv * 0.85); tm = setTimeout(loop, iv); };
+    b.addEventListener('pointerdown', e => { if (e.button > 0 || b.disabled) return; e.preventDefault(); SFX.resume(); stop(); doTrain(); iv = 260; tm = setTimeout(loop, 420); });
+    for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+    b.addEventListener('click', e => { if (e.detail === 0) { SFX.resume(); doTrain(); } });
+  })();
   tap('btnPullP1', () => pull(1, 'p')); tap('btnPullP10', () => pull(10, 'p'));
   tap('btnShopClear', () => { pullLog.length = 0; SFX.click(); refreshShop(); });
   tap('curGems', () => { SFX.tab(); showGemShop(); });                                         // 상단 보석 캡슐 = 상점의 보석 상점
