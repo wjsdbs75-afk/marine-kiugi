@@ -138,6 +138,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .tab[aria-selected="true"] { background: var(--hazard); color: var(--ink); border-color: var(--ink); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .5); z-index: 1; }
 .tab[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
 /* 가운데 '전투' 탭: 늘 노란 큰 버튼. 아랫선은 다른 탭과 같고, 아이콘이 큰 만큼만 위로 솟는다. 고르면 흰 테두리 */
+.tab.locked canvas { filter: grayscale(1) brightness(.6); }
+.tab.locked::after { content: ''; position: absolute; left: 50%; top: 32%; width: 1.7em; height: 1.7em; margin: -.85em 0 0 -.85em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4.5' y='10' width='15' height='11' rx='2' fill='%23ffc21f' stroke='%230a0f1c' stroke-width='1.8'/%3E%3Cpath d='M8 10V7.5a4 4 0 0 1 8 0V10' fill='none' stroke='%230a0f1c' stroke-width='2.4'/%3E%3Ccircle cx='12' cy='15.2' r='1.6' fill='%230a0f1c'/%3E%3C/svg%3E") center / contain no-repeat; }
 .tab.main { background: linear-gradient(#ffd851, #f2a414); color: var(--ink); border-color: var(--ink); font-size: .95em; box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55); border-radius: .7em; padding-top: .05em; transform-origin: 50% 100%; }
 .tab.main canvas { width: 3.75em; height: 3.75em; }
 .tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55), 0 0 0 .14em #fff; }
@@ -614,7 +616,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.48', VERSION_DATE = '2026.10.06', VERSION_NOTE = '기본 총알을 더 빠르게, 빗줄기처럼 가는 예광선으로. 훈련 아이콘 새 그림';   // 게시할 때마다 올린다
+const VERSION = 'v0.49', VERSION_DATE = '2026.10.06', VERSION_NOTE = '달릴 때 몸이 커졌다 작아졌다 보이던 것 고침, 분대원 해금·슬롯 개편';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -677,7 +679,7 @@ const UPS = [
   { id: 'strike',  name: '포격 지원',     max: 5, w: 6,  pr: 6, desc: '하늘에서 포탄이 떨어진다', skill: true },
   { id: 'mine',    name: '지뢰 살포',     max: 5, w: 6,  pr: 3, desc: '지나간 자리에 지뢰 설치', skill: true },
   { id: 'shield',  name: '에너지 보호막', max: 4, w: 5,  pr: 5, desc: '피해 1회 무효, 일정 시간 후 재충전', skill: true },
-  { id: 'squad',   name: '신병 합류',     max: 4, w: 7,  pr: 9, desc: '함께 싸우는 분대원 +1', skill: true },
+  { id: 'squad',   name: '신병 합류',     max: 4, w: 7,  pr: 9, desc: () => `전투병 합류 · 분대 슬롯 ${squadUsed() + 1} / ${squadSlots()}`, skill: true },
   { id: 'stim',    name: '스팀팩 개량',   max: 4, w: 6,  pr: 4, desc: '지속 +1.5초, 체력 소모 감소, 효과 증가' },
   // 사격·처치에 반응하는 증강
   { id: 'launcher', name: '유탄발사기',   max: 5, w: 8, pr: 8, skill: true, desc: l => `사격 ${LAUNCH_N[l - 1]}회마다 유탄 발사, 맞은 적 주변에 폭발 피해` },
@@ -693,6 +695,13 @@ const UPS = [
   { id: 'medic',    name: '의무병',        max: 3, w: 5, pr: 5, skill: true, desc: l => l <= 1 ? `의무병 합류: 초당 체력 ${MEDIC_HEAL[0]}% 치료 · 전투 자극제로 공격력 +${MEDIC_ATK[0]}%` : `치료 초당 ${MEDIC_HEAL[l - 1]}% · 공격력 +${MEDIC_ATK[l - 1]}%` },
 ];
 const LAUNCH_N = [12, 10, 9, 8, 7], CHARGE_N = [8, 7, 6, 6, 5];
+// ---------- 분대: 스테이지 3부터. 레벨업으로 합류하는 분대원(전투병·의무병)은 슬롯 수만큼.
+// 슬롯 = 기본 1 + 영구 확장(유료, 최대 2) + 광고 1 (다음 출격 1회)
+const SQUAD_UNLOCK = 3, SQUAD_PAID_MAX = 2, SQUAD_PRICE = '₩3,300';
+const squadUnlocked = () => (save.best || 0) >= SQUAD_UNLOCK - 1;
+const squadSlots = () => 1 + (save.sqSlots || 0) + (G && G.adSlot ? 1 : 0);
+const squadUsed = () => (G.up.squad || 0) + (G.up.medic ? 1 : 0);
+const squadRoom = () => !!G && G.stage >= SQUAD_UNLOCK && squadUsed() < squadSlots();
 const upDesc = (u, lv) => typeof u.desc === 'function' ? u.desc(Math.min(u.max, lv + 1)) : u.desc;
 const UP_BY_ID = Object.fromEntries(UPS.map(u => [u.id, u]));
 const FALLBACK_UPS = [
@@ -709,7 +718,6 @@ const METAS = [
   { id: 'def',   name: '장갑 보강',   desc: '받는 피해 -0.7',    max: 10, base: 80,   g: 1.4 },
   { id: 'gold',  name: '전리품 수집', desc: '코인 획득 +10%',    max: 15, base: 70,   g: 1.35 },
   { id: 'xp',    name: '실전 경험',   desc: '경험치 획득 +5%',   max: 10, base: 70,   g: 1.35 },
-  { id: 'squad', name: '분대 편성',   desc: '시작 분대원 +1',    max: 2,  base: 1200, g: 4,   grp: 'squad' },   // 분대 탭에 보인다
   { id: 'sqd',   name: '분대 훈련',   desc: '분대원 피해 +10%',  max: 10, base: 120,  g: 1.3, grp: 'squad' },
 ];
 const metaCost = (m, lv) => Math.round(m.base * Math.pow(m.g, lv));
@@ -834,6 +842,8 @@ function loadSave() {
   save.shot = save.shot === 2 || save.shot === 3 ? save.shot : 1;     // 총소리 번호
   save.sfxVol = Number.isFinite(save.sfxVol) ? clamp(save.sfxVol, 0, 100) : 50; save.musicVol = Number.isFinite(save.musicVol) ? clamp(save.musicVol, 0, 100) : 30;
   save.gems = Math.max(0, save.gems | 0);
+  if (save.sqSlots == null) save.sqSlots = Math.min(SQUAD_PAID_MAX, save.meta.squad || 0);
+  save.adSlot = !!save.adSlot;
   save.energy = Number.isFinite(save.energy) ? clamp(Math.floor(save.energy), 0, ENERGY_MAX) : ENERGY_MAX;
   if (!(save.energyAt > 0) || save.energyAt > Date.now()) save.energyAt = Date.now();
 }
@@ -1069,7 +1079,10 @@ function muzzleOf(dir, s) {
   const d = DIRS[dir & 7], mz = ATLAS.map._muz[d[0]], H = HERO_H * s, gy = Math.sin((dir & 7) * Math.PI / 4) * 9 * s;
   return { dx: (d[1] ? -1 : 1) * mz[0] * H, gy, h: mz[1] * H + gy };
 }
-const RUN_MIX = 0.3;         // 한 장을 보여 주는 시간의 끝 30% 동안 다음 장과 섞어 넘긴다
+const RUN_MIX = 0.12;        // 한 장을 보여 주는 시간의 끝 12% 동안 다음 장과 섞어 넘긴다 (길면 겹친 잔상에 몸이 부풀어 보인다)
+// 달리기 장별 세로 보정 (그림 px). 숙인 장은 헬멧이 낮고 한 발로 선 장은 높아 걸을 때 몸이 커졌다 작아졌다 보였다.
+// 헬멧 높이 출렁임을 서 있는 그림 기준 40% 로 줄인 값.
+const HERO_RUN_OY = {"": [-2.8, -8.6, 8.1], "se_": [-3.0, -3.8, 8.3], "s_": [-1.5, 0.1, 9.5], "ne_": [0.9, 1.7, 9.3], "n_": [0.1, -0.4, 9.5]};
 // 몸통을 한 장의 그림 칸(BODY)에 먼저 그린 뒤 가로 띠로 잘라 옮겨 그린다.
 // 그래야 반동은 상체에만 주고(다리는 땅에 붙어 있음), 다리는 아래로 갈수록 살짝 가늘게 할 수 있다.
 const BODY_W = 300, BODY_H = 270, BODY_AX = 150, BODY_AY = 262;   // 그림 칸 크기와 발 기준점 (그림 px)
@@ -1113,7 +1126,7 @@ function drawMarine(c, x, y, o) {
     const N = R.length, u = (((o.walk / TAU * N) % N) + N) % N, i = Math.floor(u) % N, j = (i + 1) % N, fr = u - Math.floor(u);
     const t = fr > 1 - RUN_MIX ? (k => k * k * (3 - 2 * k))((fr - (1 - RUN_MIX)) / RUN_MIX) : 0;
     ty = lerp(R[i][0], R[j][0], t);
-    const nA = 'hero_' + d[0] + 'r' + i, nB = 'hero_' + d[0] + 'r' + j, oa = [0, R[i][1]], ob = [0, R[j][1]];
+    const RO = HERO_RUN_OY[d[0]] || [R[0][1], R[1][1], R[2][1]], nA = 'hero_' + d[0] + 'r' + i, nB = 'hero_' + d[0] + 'r' + j, oa = [0, RO[i]], ob = [0, RO[j]];
     o._body = () => {
       bodyG.globalCompositeOperation = 'source-over'; bodyG.globalAlpha = 1; bodyG.clearRect(0, 0, BODY_W, BODY_H);
       if (t > 0.02 && t < 0.98) { bodyG.globalCompositeOperation = 'lighter'; bodyPut(nA, v, 1 - t, oa[1]); bodyPut(nB, v, t, ob[1]); bodyG.globalCompositeOperation = 'source-over'; }
@@ -1459,7 +1472,7 @@ function updateMedic(dt) {
   } else m.pulseT = 0;
 }
 function syncSquad() {
-  const n = (G.up.squad || 0) + (save.meta.squad || 0);
+  const n = G.up.squad || 0;
   while (G.squad.length < n) {
     const i = G.squad.length, a = rand(TAU);
     const m = { x: G.p.x + Math.cos(a) * 26, y: G.p.y + Math.sin(a) * 26, dir: 2, aim: Math.PI / 2, walk: 0, idle: rand(6), moving: false, fire: 0, fireT: rand(0.5), v: 'sq' + (i % 4) };
@@ -1614,8 +1627,9 @@ function addXp(v) {
   }
 }
 function rollChoices() {
-  const hasSquad = (G.up.squad || 0) + (save.meta.squad || 0) > 0;
-  const bag = UPS.filter(u => (G.up[u.id] || 0) < u.max && (u.need !== 'squad' || hasSquad)), res = [];
+  const hasSquad = (G.up.squad || 0) > 0, room = squadRoom();
+  const slotOk = u => (u.id !== 'squad' && !(u.id === 'medic' && !G.up.medic)) || room;      // 새 분대원(전투병·의무병 합류)은 빈 슬롯이 있을 때만
+  const bag = UPS.filter(u => (G.up[u.id] || 0) < u.max && (u.need !== 'squad' || hasSquad) && slotOk(u)), res = [];
   const wt = u => u.w * ((G.up[u.id] || 0) > 0 ? 1.35 : 1);
   while (res.length < 3 && bag.length) {
     let r = Math.random() * bag.reduce((s, u) => s + wt(u), 0), i = 0;
@@ -1624,7 +1638,7 @@ function rollChoices() {
   }
   // 의무병은 초반 레벨업 3번 안에 꼭 한 번은 보여 준다 (1번째 1/3, 2번째 2/3, 3번째에는 반드시)
   const med = UPS.find(u => u.id === 'medic');
-  if (med && !G.up.medic && !G.medicShown && (G.luCount || 0) <= 3 && !res.includes(med) && (G.luCount >= 3 || Math.random() < (G.luCount || 1) / 3)) { if (res.length >= 3) res[2] = med; else res.push(med); }
+  if (med && room && !G.up.medic && !G.medicShown && (G.luCount || 0) <= 3 && !res.includes(med) && (G.luCount >= 3 || Math.random() < (G.luCount || 1) / 3)) { if (res.length >= 3) res[2] = med; else res.push(med); }
   if (res.includes(med)) G.medicShown = true;
   for (const f of FALLBACK_UPS) if (res.length < 3) res.push(f);
   return res;
@@ -2185,7 +2199,7 @@ function renderLobby(c) {
   c.translate(-cx, -cy); drawGround(c, st, cx, cy, vw, vh);
   shadow(c, -50, -24, 56, 0.24);
   drawShip(c, -50, -24 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
-  const n = save.meta.squad || 0;
+  const n = squadUnlocked() ? save.sqSlots || 0 : 0;
   for (let i = 0; i < n; i++) drawMarine(c, 72 + i * 22, 12 + i * 20, { dir: 1, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
   drawMarine(c, 26, 46, { dir: 1, idle: T * 3, s: 1.9 });
   c.restore();
@@ -2314,6 +2328,7 @@ function startRun(stage) {
   const pips = el('pips'); pips.textContent = ''; for (let i = 0; i < ROUNDS; i++) pips.append(mk('i', 'pip'));
   cache.pipR = -1; el('hint').style.opacity = 1;
   newRun(stage); updateHud();
+  G.adSlot = !!save.adSlot && stage >= SQUAD_UNLOCK; if (G.adSlot) { save.adSlot = false; writeSave(); }
 }
 
 // ---------- 병영 (영구 강화)
@@ -2405,32 +2420,55 @@ function doTrain() {
 }
 
 // ---------- 분대: 출격 때 함께 내려오는 분대원과 의무병
-const SQUAD_MAX = METAS.find(m => m.id === 'squad').max;
 function refreshSquad() {
   refreshWallet();
-  const n = save.meta.squad || 0; setTxt('sqCount', `분대원 ${n} / ${SQUAD_MAX}`);
+  const paid = save.sqSlots || 0, total = 1 + paid + (save.adSlot ? 1 : 0);
+  setTxt('sqCount', `분대 슬롯 ${total}`);
+  // 그림: 가운데 해병 + 슬롯 자리 (기본·영구·광고). 빈 자리는 흐리게
   const cv3 = el('squadCv'), c = cv3.getContext('2d'); c.clearRect(0, 0, cv3.width, cv3.height);
   if (ATLAS.ready) {
-    c.save(); c.translate(240, 196); c.scale(2.3, 2.3);
-    c.fillStyle = 'rgba(0,0,0,.18)'; ell(c, 0, 4, 98, 14); c.fill();
-    for (let i = 0; i < SQUAD_MAX; i++) {
-      const x = i ? 58 : -58, y = -10, own = i < n;
-      c.save(); if (!own) c.globalAlpha = 0.28;
-      drawMarine(c, x, y, { dir: i ? 3 : 1, idle: 1 + i, s: 0.9, v: 'sq' + i }); c.restore();
-      if (!own) { c.fillStyle = '#ffffff'; c.font = '700 7px sans-serif'; c.textAlign = 'center'; c.fillText('빈 자리', x, y + 11); }
+    c.save(); c.translate(240, 196); c.scale(2.1, 2.1);
+    c.fillStyle = 'rgba(0,0,0,.18)'; ell(c, 0, 4, 104, 14); c.fill();
+    const spots = [[-52, -10, 1], [52, -10, 3], [-92, -2, 1], [92, -2, 3]];
+    for (let k = 0; k < 4; k++) {
+      const [x, y, dir] = spots[k], kind = k === 0 ? 'base' : k <= SQUAD_PAID_MAX ? (k <= paid ? 'paid' : 'lock') : (save.adSlot ? 'ad' : 'lock');
+      c.save(); if (kind === 'lock') c.globalAlpha = 0.22;
+      if (k === 1 && kind !== 'lock') drawMedic(c, { x, y, dir, idle: 2 }, 0.9); else drawMarine(c, x, y, { dir, idle: 1 + k, s: 0.85, v: 'sq' + k });
+      c.restore();
+      c.fillStyle = kind === 'lock' ? 'rgba(255,255,255,.7)' : kind === 'ad' ? '#7fe3ff' : '#ffd24a'; c.font = '700 6.5px sans-serif'; c.textAlign = 'center';
+      c.fillText(kind === 'base' ? '기본' : kind === 'paid' ? '영구' : kind === 'ad' ? '광고 1회' : '잠김', x, y + 11);
     }
-    drawMarine(c, 0, 0, { dir: 2, idle: 0, s: 1.15 });
+    drawMarine(c, 0, 0, { dir: 2, idle: 0, s: 1.1 });
     c.restore();
   }
   const box = el('squadRows'), top = box.scrollTop; box.textContent = '';
-  // 의무병 안내 (전투 중 레벨업에서만 합류)
-  const med = mk('div', 'row'), mc = mk('canvas', 'ico'); mc.width = mc.height = 96; mc.setAttribute('aria-hidden', 'true');
-  { const g2 = mc.getContext('2d'); g2.save(); g2.translate(48, 92); g2.scale(1.8, 1.8); drawMedic(g2, { x: 0, y: 0, dir: 1, idle: 0 }, 0.95); g2.restore(); }
-  const mb = mk('div', 'row-body'); mb.append(mk('b', '', '의무병'), mk('span', '', `전투 중 레벨업에서 '의무병'을 고르면 합류해요. 단계마다 치료 초당 ${MEDIC_HEAL.join('→')}% · 공격력 +${MEDIC_ATK.join('→')}%`));
-  med.append(mc, mb); box.append(med);
+  const row = (ico, title, desc, btn) => { const r = mk('div', 'row'); if (ico) r.append(ico); const b2 = mk('div', 'row-body'); b2.append(mk('b', '', title), mk('span', '', desc)); r.append(b2); if (btn) r.append(btn); box.append(r); return r; };
+  const medIco = () => { const mc = mk('canvas', 'ico'); mc.width = mc.height = 96; mc.setAttribute('aria-hidden', 'true'); const g2 = mc.getContext('2d'); g2.save(); g2.translate(48, 92); g2.scale(1.8, 1.8); drawMedic(g2, { x: 0, y: 0, dir: 1, idle: 0 }, 0.95); g2.restore(); return mc; };
+  row(iconCanvas('i_squad', 'ico'), '기본 슬롯', `전투 중 레벨업에서 전투병('신병 합류') 또는 의무병 중 1명이 합류해요. 스테이지 ${SQUAD_UNLOCK}부터`);
+  // 영구 슬롯 (유료)
+  const buy = mk('button', 'btn gold sm'); buy.type = 'button';
+  if (paid >= SQUAD_PAID_MAX) { buy.textContent = 'MAX'; buy.disabled = true; }
+  else { buy.textContent = SQUAD_PRICE; buy.addEventListener('click', () => { SFX.resume(); save.sqSlots = paid + 1; writeSave(); SFX.buy(); toast('영구 분대 슬롯 +1 (테스트: 결제 없이 지급)'); refreshSquad(); }); }
+  row(medIco(), `영구 슬롯 ${paid} / ${SQUAD_PAID_MAX}`, '분대 슬롯이 영구로 1칸 늘어나요. 전투병과 의무병을 함께 데려갈 수 있어요', buy);
+  // 광고 슬롯 (다음 출격 1회)
+  const ad = mk('button', 'btn sm'); ad.type = 'button';
+  if (save.adSlot) { ad.textContent = '준비됨'; ad.disabled = true; }
+  else { ad.textContent = '광고 보기'; ad.addEventListener('click', () => { SFX.resume(); showAd(() => { save.adSlot = true; writeSave(); toast('다음 출격에 분대 슬롯 +1'); refreshSquad(); }); }); }
+  row(iconCanvas('i_squad', 'ico', 170), '광고 슬롯', '광고를 보면 다음 출격 1회 분대 슬롯 +1 (스테이지 3 이상)', ad);
   for (const m of METAS) if (m.grp === 'squad') box.append(metaRow(m, refreshSquad));
-  const tip = mk('p', 'note', '전투 중에도 레벨업에서 \'신병 합류\'를 고르면 분대원이 늘어나요'); box.append(tip);
+  box.append(mk('p', 'note', '지금은 테스트 버전이라 결제·광고 없이 바로 지급됩니다'));
   box.scrollTop = top;
+}
+// 광고 (테스트): 실제 광고 SDK 는 출시 때 연결. 지금은 5초 화면으로 대신한다
+function showAd(done) {
+  const ov = mk('div', 'overlay ad-ov'); ov.setAttribute('role', 'dialog');
+  const t = mk('b', 'title-pop outline', '광고'), sub = mk('p', 'sub-pop', '테스트 광고 · 5'), bar = mk('div', 'boot-bar'), fill = mk('i'); bar.append(fill); bar.style.width = '70%';
+  ov.append(t, sub, bar); el('game').append(ov);
+  const t0 = performance.now(), tick = () => {
+    const k = Math.min(1, (performance.now() - t0) / 5000); fill.style.width = (k * 100) + '%'; sub.textContent = '테스트 광고 · ' + Math.ceil(5 - k * 5);
+    if (k < 1) requestAnimationFrame(tick); else { ov.remove(); SFX.buy(); done(); }
+  };
+  requestAnimationFrame(tick);
 }
 
 // ---------- 하단 탭
@@ -2445,14 +2483,20 @@ function buildTabs() {
     if (ico) { const ic = iconCanvas(ico), g2 = ic.getContext('2d'); g2.clearRect(0, 0, 96, 96); sprC(g2, ATLAS.map[ico] ? ico : 'i_' + (ICON_ALIAS[ico] || ico), 48, 48, 95); b.append(ic); }   // 탭 아이콘은 칸을 꽉 채워 그린다
     else b.insertAdjacentHTML('beforeend', COG);
     b.append(mk('span', '', label));
-    b.addEventListener('click', () => { SFX.resume(); SFX.tab(); setTab(id); });
+    b.addEventListener('click', () => {
+      SFX.resume();
+      if (id === 'Squad' && !squadUnlocked()) { SFX.deny(); toast(`STAGE ${SQUAD_UNLOCK - 1}를 클리어하면 분대가 열립니다`); return; }
+      SFX.tab(); setTab(id);
+    });
     nav.append(b);
   }
   for (const c of document.querySelectorAll('canvas[data-ico]')) { const g2 = c.getContext('2d'); g2.clearRect(0, 0, 96, 96); sprC(g2, c.dataset.ico, 48, 48, 84); }
   setTab(curTab);
 }
 function setTab(id) {
+  if (id === 'Squad' && !squadUnlocked()) id = 'Home';
   curTab = id;
+  const sq = document.getElementById('tabSquad'); if (sq) sq.classList.toggle('locked', !squadUnlocked());
   for (const t of PAGES) { el('page' + t).hidden = t !== id; const b = document.getElementById('tab' + t); if (b) b.setAttribute('aria-selected', String(t === id)); }
   el('btnSet').setAttribute('aria-pressed', String(id === 'Set'));
   if (id === 'Gear') refreshGear(); else if (id === 'Up') refreshBarracks(); else if (id === 'Squad') refreshSquad(); else if (id === 'Shop') refreshShop(); else if (id === 'Set') refreshSet(); else refreshLobby();
