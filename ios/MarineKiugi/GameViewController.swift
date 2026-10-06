@@ -60,6 +60,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         w.scrollView.backgroundColor = Self.night
         w.scrollView.isScrollEnabled = false
         w.scrollView.bounces = false
+        w.scrollView.minimumZoomScale = 1                    // 두 번 탭·핀치로 화면이 확대되지 않게
+        w.scrollView.maximumZoomScale = 1
+        w.scrollView.pinchGestureRecognizer?.isEnabled = false
         w.scrollView.contentInsetAdjustmentBehavior = .never   // 노치·홈 막대 여백은 페이지가 env(safe-area-inset-*) 로 직접 민다
         w.allowsLinkPreview = false
         w.isHidden = true                                     // 다 뜬 뒤에 보여 준다

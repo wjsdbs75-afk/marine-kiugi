@@ -22,11 +22,11 @@ HEAD = """<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#05070f">
 <title>{title}</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='14 14 80 80'%3E%3Crect x='14' y='14' width='80' height='80' rx='18' fill='%231c2740'/%3E%3Cg fill='%23ffc21f' stroke='%230a0f1c' stroke-width='2.5' stroke-linejoin='round'%3E%3Cpath d='M34 46 54 32 74 46V54L54 40 34 54Z'/%3E%3Cpath d='M34 58 54 44 74 58V66L54 52 34 66Z'/%3E%3Cpath d='M34 70 54 56 74 70V78L54 64 34 78Z'/%3E%3C/g%3E%3C/svg%3E">
-<style>:root{{box-sizing:border-box;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#05070f;color:#eaf0ff}}img{{max-width:100%}}[hidden]:not([hidden=until-found i]){{display:none!important}}</style>
+<style>:root{{touch-action:manipulation;box-sizing:border-box;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#05070f;color:#eaf0ff}}img{{max-width:100%}}[hidden]:not([hidden=until-found i]){{display:none!important}}</style>
 <script>
 // 안드로이드 껍데기 앱(android/)이 상태 바·내비게이션 바 높이를 알려 준다. 브라우저에서는 MKShell 이 없어 그냥 지나간다.
 (function () {{
