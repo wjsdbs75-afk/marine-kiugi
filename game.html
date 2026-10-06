@@ -616,7 +616,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.51', VERSION_DATE = '2026.10.06', VERSION_NOTE = '스테이지 30까지 (챕터 2 고등 종족, 챕터 3 기계 군단), 보스전 울타리, 대사 수정';   // 게시할 때마다 올린다
+const VERSION = 'v0.52', VERSION_DATE = '2026.10.06', VERSION_NOTE = '보스전 울타리를 크게, 사각형으로';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -865,7 +865,7 @@ const BARKS = {
   stim:  ['투약 완료. 좀 살겠군.', '심장이 터지겠군.', '지금이다, 몰아쳐!', '시야가 선명해지는군.'],
   level: ['진급 완료.', '감 잡았다.', '진급을 끝냈다.'],
   low:   ['의무병 어디 갔어?!', '적이 너무 많다. 지원을 요청한다.', '아직 안 끝났다.'],
-  boss:  ['대형 개체 접근!', '죽기 딱 좋은 날이로군.'],
+  boss:  ['대형 개체를 포착했다.', '죽기 딱 좋은 날이로군.'],
   clear: ['구역 확보. 복귀한다.', '임무 완료. 이상 없음.'],
   squad: ['지원 병력 합류.', '분대, 대형 유지!', '신병 받았다.'],
   medic: ['의무병 합류. 엄호 바란다.', '의무병이 합류했다.'],
@@ -1546,7 +1546,10 @@ function startRound(n) {
   if (n === 5) spawnElite();
 }
 function spawnPos() {
-  const ar = G.arena; if (ar && !ar.out) { const an = rand(TAU); return { x: ar.x + Math.cos(an) * ar.rx * 0.9, y: ar.y + Math.sin(an) * ar.ry * 0.9 }; }
+  const ar = G.arena; if (ar && !ar.out) { const q = spawnPosView(); q.x = clamp(q.x, ar.x - ar.hw + 14, ar.x + ar.hw - 14); q.y = clamp(q.y, ar.y - ar.hh + 14, ar.y + ar.hh - 14); return q; }
+  return spawnPosView();
+}
+function spawnPosView() {
   const hw = VW / 2 + 36, hh = VH / 2 + 46, cx = G.p.x, cy = G.p.y;
   const per = Math.random() * (hw + hh) * 4;
   if (per < hw * 2) return { x: cx - hw + per, y: cy - hh };
@@ -1583,42 +1586,46 @@ function spawnElite() {
   const type = mix.some(m => m[0] === 'tank') ? 'tank' : mix[0][0];
   makeEnemy(type, q.x, q.y, { hpMul: type === 'tank' ? 5 : 14, scale: 1.45, xpMul: type === 'tank' ? 3 : 12, elite: true });
 }
-// 보스전 울타리: 보스가 나오면 해병 둘레에 세로로 긴 타원 울타리를 친다. 해병·분대·적 모두 안에서만 움직인다.
+// 보스전 울타리: 보스가 나오면 해병을 가운데에 두고 큰 사각형 울타리를 친다 (가로 약 화면 1.8배, 세로 약 1.4배).
+// 해병·분대·적 모두 안에서만 움직인다.
 const ARENA_IN = 0.6;      // 울타리가 내려오는 시간 (초)
 function makeArena() {
-  const p = G.p, a = { x: p.x, y: p.y - 10, rx: VW * 0.47, ry: VH * 0.34, t: 0, out: 0 };
+  const p = G.p, a = { x: p.x, y: p.y, hw: VW * 0.9, hh: VH * 0.7, t: 0, out: 0 };
   G.arena = a;
   for (const e of G.enemies) if (!e.dead && !e.boss && arenaOut(e, 0) > 1) { e.dead = true; burst(e.x, e.y - e.r, e.c1, 4, 90); }   // 밖에 있던 적은 정리
-  G.fx.push({ k: 'ring', x: a.x, y: a.y, r: a.rx, t: 0, dur: 0.5, col: '#ff6a5a' }); shake(5);
+  shake(5);
 }
-const arenaOut = (o, pad) => { const a = G.arena; return Math.hypot((o.x - a.x) / (a.rx - pad), (o.y - a.y) / (a.ry - pad)); };   // 1 보다 크면 밖
+const arenaOut = (o, pad) => { const a = G.arena; return Math.max(Math.abs(o.x - a.x) / (a.hw - pad), Math.abs(o.y - a.y) / (a.hh - pad)); };   // 1 보다 크면 밖
 function arenaClamp(o, pad) {
   const a = G.arena; if (!a || a.out || a.t < ARENA_IN) return false;
-  const d = arenaOut(o, pad); if (d <= 1) return false;
-  o.x = a.x + (o.x - a.x) / d; o.y = a.y + (o.y - a.y) / d; return true;
+  const x = clamp(o.x, a.x - a.hw + pad, a.x + a.hw - pad), y = clamp(o.y, a.y - a.hh + pad, a.y + a.hh - pad);
+  if (x === o.x && y === o.y) return false; o.x = x; o.y = y; return true;
 }
 function drawArena(c, T, cx, cy) {
   const a = G.arena; if (!a) return;
-  const k = a.out ? Math.max(0, 1 - a.out / 0.5) : Math.min(1, a.t / ARENA_IN), sc = 1 + (1 - k) * 0.6, rx = a.rx * sc, ry = a.ry * sc;
+  const k = a.out ? Math.max(0, 1 - a.out / 0.5) : Math.min(1, a.t / ARENA_IN), sc = 1 + (1 - k) * 0.25, hw = a.hw * sc, hh = a.hh * sc, x0 = a.x - hw, y0 = a.y - hh;
   c.save(); c.globalAlpha = k;
   // 울타리 밖은 어둡게
-  c.beginPath(); c.rect(cx - 20, cy - 20, VW + 40, VH + 40); c.ellipse(a.x, a.y, rx, ry, 0, 0, TAU); c.fillStyle = 'rgba(8,10,24,.42)'; c.fill('evenodd');
+  c.beginPath(); c.rect(cx - 20, cy - 20, VW + 40, VH + 40); c.rect(x0, y0, hw * 2, hh * 2); c.fillStyle = 'rgba(8,10,24,.45)'; c.fill('evenodd');
   // 에너지 띠
-  c.strokeStyle = 'rgba(255,80,60,.35)'; c.lineWidth = 9; ell(c, a.x, a.y, rx, ry); c.stroke();
-  c.strokeStyle = `rgba(255,${150 + 60 * Math.sin(T * 8) | 0},120,.95)`; c.lineWidth = 2.4; c.setLineDash([10, 7]); c.lineDashOffset = -T * 40; ell(c, a.x, a.y, rx, ry); c.stroke(); c.setLineDash([]);
-  // 기둥
-  for (let i = 0; i < 28; i++) {
-    const an = i / 28 * TAU, px = a.x + Math.cos(an) * rx, py = a.y + Math.sin(an) * ry;
-    c.fillStyle = '#20263a'; c.fillRect(px - 2.2, py - 13, 4.4, 13); c.strokeStyle = '#0a0f1c'; c.lineWidth = 1; c.strokeRect(px - 2.2, py - 13, 4.4, 13);
-    c.fillStyle = Math.sin(T * 6 + i) > 0 ? '#ff6a5a' : '#ffb04a'; c.beginPath(); c.arc(px, py - 14, 2.3, 0, TAU); c.fill();
-  }
+  c.strokeStyle = 'rgba(255,80,60,.35)'; c.lineWidth = 10; c.strokeRect(x0, y0, hw * 2, hh * 2);
+  c.strokeStyle = `rgba(255,${150 + 60 * Math.sin(T * 8) | 0},120,.95)`; c.lineWidth = 2.6; c.setLineDash([12, 8]); c.lineDashOffset = -T * 40; c.strokeRect(x0, y0, hw * 2, hh * 2); c.setLineDash([]);
+  // 기둥 (보이는 곳만)
+  const post = (px, py, i) => {
+    if (px < cx - 10 || px > cx + VW + 10 || py < cy - 10 || py > cy + VH + 30) return;
+    c.fillStyle = '#20263a'; c.fillRect(px - 2.6, py - 15, 5.2, 15); c.strokeStyle = '#0a0f1c'; c.lineWidth = 1; c.strokeRect(px - 2.6, py - 15, 5.2, 15);
+    c.fillStyle = Math.sin(T * 6 + i) > 0 ? '#ff6a5a' : '#ffb04a'; c.beginPath(); c.arc(px, py - 16, 2.6, 0, TAU); c.fill();
+  };
+  const step = 40, nx = Math.round(hw * 2 / step), ny = Math.round(hh * 2 / step);
+  for (let i = 0; i <= nx; i++) { const px = x0 + i * hw * 2 / nx; post(px, y0, i); post(px, y0 + hh * 2, i + 7); }
+  for (let i = 1; i < ny; i++) { const py = y0 + i * hh * 2 / ny; post(x0, py, i + 3); post(x0 + hw * 2, py, i + 11); }
   c.restore();
 }
 function spawnBoss() {
   makeArena();
   const s = G.stage, hp = (1500 + 160 * s) * stageHpMul(s), hue = (G.st.hue + 320) % 360;
   const e = {
-    type: 'boss', boss: true, x: G.arena.x + rand(-40, 40), y: G.arena.y - G.arena.ry * 0.62, hp, maxHp: hp, spd: 40 + s, baseSpd: 40 + s, dmg: 15 * stageDmgMul(s), r: 34, xp: 40,
+    type: 'boss', boss: true, x: G.p.x + rand(-40, 40), y: G.p.y - VH * 0.36, hp, maxHp: hp, spd: 40 + s, baseSpd: 40 + s, dmg: 15 * stageDmgMul(s), r: 34, xp: 40,
     t: 0, seed: 0, flash: 0, kx: 0, ky: 0, face: 1, cd: 2.6, pat: 0, mode: null, modeT: 0, mx: 0, my: 1, dead: false, prime: 0,
     c1: MON_COL.boss, c2: MON_COL.boss,
   };
@@ -1753,7 +1760,7 @@ function autoMove() {
     if (!b.seen) continue;
     const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 48) { const w = (48 - d) / 48; vx += -b.vy / 110 * w * 1.2 + dx / d * w * 0.8; vy += b.vx / 110 * w * 1.2 + dy / d * w * 0.8; }
   }
-  if (G.arena && !G.arena.out) { const ar = G.arena, od = arenaOut(p, 0); if (od > 0.78) { const k = (od - 0.78) * 6; vx -= (p.x - ar.x) / ar.rx * k; vy -= (p.y - ar.y) / ar.ry * k; } }
+  if (G.arena && !G.arena.out) { const ar = G.arena, fx = (p.x - ar.x) / ar.hw, fy = (p.y - ar.y) / ar.hh; if (Math.abs(fx) > 0.82) vx -= Math.sign(fx) * (Math.abs(fx) - 0.82) * 8; if (Math.abs(fy) > 0.82) vy -= Math.sign(fy) * (Math.abs(fy) - 0.82) * 8; }
   // 바닥 예고: 대부분(70%) 알아채고 원·길 밖으로 빠진다
   for (const w of G.warns) {
     if (w.seen == null) w.seen = Math.random() < 0.7;
