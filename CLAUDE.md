@@ -29,7 +29,7 @@
 6. **저장소 반영.** `game.html` 을 커밋해서 `main` 에 push. `pages.yml` 이 1~2분 안에 배포한다. `version.json` 의 `version` 이 새 값이면 반영된 것이다.
 7. 사용자에게 "앱을 완전히 껐다 켜면 새 버전이 뜬다"고 알려 준다. APK 를 다시 빌드할 필요는 없다.
 
-`android/` 를 고쳤을 때만 `android.yml` 이 APK 를 다시 빌드해 Releases 의 `apk` 에 올린다.
+`android/` 를 고쳤을 때만 `android.yml` 이 APK 를 다시 빌드해 Releases 의 `apk` 에 올린다. `ios/` 를 고쳤을 때만 `ios.yml` 이 아이폰 앱을 빌드해 TestFlight 에 올린다 (게임만 고쳤을 때는 둘 다 필요 없다).
 
 ## 앱과 페이지 사이의 약속 (깨면 앱이 망가진다)
 
@@ -47,7 +47,8 @@
 - Pages 는 "GitHub Actions" 방식으로 배포한다 (Settings → Pages → Source).
 - 안드로이드 빌드는 이 저장소의 Actions 에서만 한다. Gradle 8.10.2 (워크플로의 setup-gradle 이 설치, 저장소에 gradlew 는 없음) + AGP 8.7.3, JDK 17, 외부 라이브러리 없음.
 - 공개 배포하는 앱이다. 서명 키는 저장소에 넣지 않고 Actions Secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`) 에만 둔다. 키 파일이나 비밀번호를 커밋하지 말 것. 키를 바꾸면 기존 앱 위에 덮어 설치가 안 되어 사용자들의 게임 저장이 날아가니 바꾸지 말 것.
-- `android.yml` 파일 이름을 바꾸지 말 것 (앱 버전 번호가 실행 횟수라 1부터 다시 시작한다).
+- `android.yml`, `ios.yml` 파일 이름을 바꾸지 말 것 (앱 버전·빌드 번호가 실행 횟수라 1부터 다시 시작한다).
+- 아이폰 앱(`ios/`)은 WKWebView 하나. 저장 사본을 `loadHTMLString(baseURL: Pages 주소)` 로 띄워 origin 을 맞춘다. 번들 ID `io.github.wjsdbs75afk.marinekiugi` 와 Info.plist 의 `GameURL` 을 바꾸지 말 것. 서명은 Secrets 의 App Store Connect API 키(`APPSTORE_*`, `APPLE_TEAM_ID`)로 Xcode 가 자동으로 한다. 키를 커밋하지 말 것.
 
 ## 처음 설정 점검표 (끝난 항목은 지울 것)
 

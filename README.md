@@ -41,8 +41,20 @@ game.html 수정 ──┬─▶ Claude 아티팩트에 게시
 | `android/` | 껍데기 앱 (WebView 하나, 외부 라이브러리 없음) |
 | `.github/workflows/pages.yml` | `game.html` 이 바뀌면 Pages 배포 |
 | `.github/workflows/android.yml` | `android/` 가 바뀌면 APK 빌드 → Releases 의 `apk` 에 올림 |
+| `ios/` | 아이폰 껍데기 앱 (WKWebView 하나, 외부 라이브러리 없음). Xcode 프로젝트는 `project.yml` 에서 XcodeGen 으로 만든다 |
+| `.github/workflows/ios.yml` | `ios/` 가 바뀌면 아이폰 앱 빌드 → TestFlight 에 올림 |
 
 내 컴퓨터에서 미리 보기: `python3 tools/build_site.py && python3 -m http.server -d _site` 후 http://localhost:8000
+
+## 아이폰 (TestFlight)
+
+맥 없이 GitHub Actions 의 맥에서 빌드해 TestFlight 에 올립니다. 앱은 안드로이드와 똑같이 켤 때 Pages 에서 최신 게임을 받아 기기에 저장합니다.
+
+처음 한 번:
+1. App Store Connect → 사용자 및 액세스 → 통합 → App Store Connect API 에서 **관리자(Admin)** 권한 키를 만들고 `.p8` 파일을 받습니다.
+2. 저장소 Secrets 에 `APPLE_TEAM_ID`, `APPSTORE_KEY_ID`, `APPSTORE_ISSUER_ID`, `APPSTORE_KEY_P8`(.p8 파일 내용 전체) 을 넣습니다.
+3. App Store Connect → 앱 → **+ 새로운 앱**: 번들 ID `io.github.wjsdbs75afk.marinekiugi`. (목록에 없으면 Actions 에서 "아이폰 앱 빌드" 를 한 번 돌리면 등록됩니다.)
+4. Actions 탭에서 "아이폰 앱 빌드 (TestFlight)" 를 실행 → 10~30분 뒤 TestFlight 에 뜹니다.
 
 ## 껍데기 앱 메모
 

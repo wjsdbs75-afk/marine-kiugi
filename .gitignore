@@ -1,1 +1,3 @@
 _site/
+ios/*.xcodeproj/
+ios/MarineKiugi/Info.plist
