@@ -143,35 +143,55 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .tab.main[aria-selected="true"] { background: linear-gradient(#ffe27a, #ffb41f); box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .55), 0 0 0 .14em #fff; }
 .tab.main[aria-selected="true"] canvas { width: 3.75em; height: 3.75em; }
 .tab.main:active { transform: scale(.95); }
-/* ---- 병영 훈련: 아래에서 위로 올라가는 단계 */
-.train-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .3em; }
-.train-sum div { display: flex; flex-direction: column; align-items: center; padding: .25em .1em; background: var(--steel-2); border-radius: .45em; }
-.train-sum canvas { width: 1.7em; height: 1.7em; }
-.train-sum b { font-family: var(--font-display); font-weight: 400; font-size: .82em; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.train-sum span { font-size: .6em; color: var(--fg-dim); white-space: nowrap; }
-.train-track { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: .3em; padding: .2em .4em .2em 0; background: rgba(5, 7, 15, .35); border-radius: .5em;
-  -webkit-mask-image: linear-gradient(to top, #000 70%, transparent); mask-image: linear-gradient(to top, #000 70%, transparent); }
-.tnode { position: relative; display: flex; align-items: center; gap: .55em; padding: .2em .5em .2em 0; flex: none; }
-.tnode::before { content: ''; position: absolute; left: 1.6em; top: -.35em; bottom: 50%; width: .22em; margin-left: -.11em; background: rgba(169, 182, 214, .25); }
-.tnode.done::before { background: var(--hazard); }
-.tnode .tn-no { margin-left: auto; text-align: right; font-family: var(--font-display); font-weight: 400; font-size: .72em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
-.tnode .tn-dot { position: relative; z-index: 1; width: 2.2em; height: 2.2em; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--steel-2); border: .14em solid var(--ink); margin-left: .5em; }
-.tnode .tn-dot canvas { width: 1.6em; height: 1.6em; opacity: .5; filter: grayscale(.6); }
-.tnode b { font-family: var(--font-display); font-weight: 400; font-size: .92em; color: var(--fg-dim); }
-.tnode.done .tn-dot { background: #2a3d2e; border-color: var(--heal); }
-.tnode.done .tn-dot canvas { opacity: .85; filter: none; }
-.tnode.done b { color: var(--fg); }
-.tnode.next .tn-dot { background: var(--hazard); box-shadow: 0 0 0 .18em rgba(255, 194, 31, .35); animation: tpulse 1s ease-in-out infinite; }
-.tnode.next .tn-dot canvas { opacity: 1; filter: none; }
-.tnode.next b { color: var(--hazard); }
-.tnode.mile .tn-dot { width: 2.6em; height: 2.6em; margin-left: .3em; border-color: var(--hazard); }
-.tnode.mile b::after { content: attr(data-mile); margin-left: .5em; font-size: .78em; color: var(--hazard); }
-.tnode.pop .tn-dot { animation: tpop .35s ease-out; }
-@keyframes tpulse { 50% { transform: scale(1.08); } }
-@keyframes tpop { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
-.train-btn { align-self: stretch; display: flex; align-items: center; justify-content: center; }
+/* ---- 병영 훈련: 화면 가득 세로 트랙. 아래(완료)는 주황, 위(남은 단계)는 어둡게, 경계에 노란 선 */
+.train-page { position: relative; margin: 0 -.8em -.6em; gap: 0; }
+.train-page::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5.6em; z-index: 2; pointer-events: none; background: linear-gradient(#0d1324 55%, rgba(13, 19, 36, 0)); }
+.train-page::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 5em; z-index: 2; pointer-events: none; background: linear-gradient(rgba(13, 19, 36, 0), rgba(13, 19, 36, .85)); }
+.train-head { position: absolute; left: .8em; right: .8em; top: .4em; z-index: 3; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.train-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.45em; }
+.train-sum { position: absolute; left: .6em; right: .6em; top: 2.6em; z-index: 3; display: flex; gap: .25em; pointer-events: none; }
+.train-sum div { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; padding: .15em 0 .2em; background: rgba(5, 7, 15, .72); border: .1em solid var(--ink); border-radius: .4em; }
+.train-sum i { width: 1.35em; height: 1.35em; background: center / contain no-repeat; }
+.train-sum b { font-family: var(--font-display); font-weight: 400; font-size: .7em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.train-track { position: relative; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: #1a2238; }
+.train-col { display: flex; flex-direction: column; padding: 6.2em 0 5.8em; }
+.tnode { --tile: 3.9em; position: relative; height: 5.1em; display: flex; align-items: center; padding-left: 1.6em; flex: none;
+  background: radial-gradient(rgba(255, 255, 255, .05) 18%, transparent 20%) 0 0 / .9em .9em, #20293f; }
+.tnode.done { background: radial-gradient(rgba(255, 255, 255, .13) 18%, transparent 20%) 0 0 / .9em .9em, linear-gradient(90deg, #ff9a1f, #ff8a0f); }
+.tnode.edge { box-shadow: inset 0 -.32em 0 var(--hazard); z-index: 1; }       /* 남은 단계의 맨 아래 = 경계선 */
+.tnode::before { content: ''; position: absolute; left: calc(1.6em + var(--tile) / 2 - .32em); width: .64em; top: 0; bottom: 0; background: #11172a; border-left: .1em solid #070a14; border-right: .1em solid #070a14; }
+.tnode.done::before { background: #2fae4a; border-color: #156b28; }
+.tnode.next::before { background: linear-gradient(#11172a 50%, #2fae4a 50%); }
+.tn-tile { position: relative; z-index: 1; width: var(--tile); height: var(--tile); flex: none; display: grid; place-items: center; padding: 0; border-radius: .55em; border: .16em solid #0b0f1c;
+  background: linear-gradient(#5a6178, #3f4558); box-shadow: 0 .22em 0 #0b0f1c, inset 0 .14em 0 rgba(255, 255, 255, .22); }
+.tn-tile i { width: 72%; height: 72%; background: center / contain no-repeat; filter: grayscale(1) brightness(.7); opacity: .85; }
+.tnode.done .tn-tile { background: linear-gradient(#ff8a2a, #f25d10); border-color: #86e04a; box-shadow: 0 .22em 0 #2d7a1c, inset 0 .14em 0 rgba(255, 255, 255, .4), 0 0 0 .1em #2d7a1c; }
+.tnode.done .tn-tile i { filter: none; opacity: 1; }
+.tnode.next .tn-tile { background: linear-gradient(#ffe27a, #ffb41f); border-color: #fff; animation: tpulse 1s ease-in-out infinite; }
+.tnode.next .tn-tile i { filter: none; opacity: 1; }
+.tnode.next .tn-tile::after { content: ''; position: absolute; right: -.45em; top: -.45em; width: 1.25em; height: 1.25em; border-radius: 50%; border: .12em solid #fff;
+  background: var(--danger) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4 4 13h5v7h6v-7h5z' fill='%23fff'/%3E%3C/svg%3E") center / 75% no-repeat; }
+.tnode.pop .tn-tile { animation: tpop .35s ease-out; }
+.tn-name { margin-left: .7em; font-family: var(--font-display); font-weight: 400; font-size: .9em; color: rgba(234, 240, 255, .45); white-space: nowrap; }
+.tnode.done .tn-name { color: #fff; text-shadow: 0 .08em 0 #7a3500, 0 -.06em 0 #7a3500, .06em 0 0 #7a3500, -.06em 0 0 #7a3500; }
+.tnode.next .tn-name { color: var(--hazard); }
+.tn-mile { position: absolute; left: 58%; top: 50%; width: 2.3em; height: 2.3em; margin: -1.15em 0 0 -1.15em; display: grid; place-items: center; transform: rotate(45deg); border-radius: .3em;
+  background: linear-gradient(135deg, #8a93ab, #5d6680); border: .14em solid #0b0f1c; box-shadow: 0 .16em 0 #0b0f1c; }
+.tn-mile b { transform: rotate(-45deg); font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: #fff; text-shadow: 0 .08em 0 #0b0f1c; }
+.tnode.done .tn-mile { background: linear-gradient(135deg, #3fd06a, #1a8a3a); }
+.tn-rank { position: absolute; left: calc(58% + 1.6em); top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-weight: 400; font-size: .74em; color: rgba(234, 240, 255, .5); white-space: nowrap; }
+.tnode.done .tn-rank { color: #5a2a00; }
+.train-tip { position: absolute; z-index: 4; left: 1em; width: 13em; padding: 0 0 .5em; text-align: center; background: #eeeadf; color: var(--ink); border: .15em solid var(--ink); border-radius: .7em; box-shadow: 0 .2em 0 var(--ink); pointer-events: none; }
+.train-tip b { display: block; padding: .3em 0; margin-bottom: .4em; background: var(--ink); color: #fff; border-radius: .5em .5em 0 0; font-family: var(--font-display); font-weight: 400; font-size: 1em; }
+.train-tip span { font-family: var(--font-display); font-weight: 400; font-size: 1.05em; }
+.train-tip::after { content: ''; position: absolute; left: 2.3em; bottom: -.75em; border: .65em solid transparent; border-top-color: var(--ink); border-bottom: 0; }
+.train-foot { position: absolute; left: .8em; right: .8em; bottom: .6em; z-index: 3; display: flex; flex-direction: column; gap: .3em; pointer-events: none; }
+.train-foot > * { pointer-events: auto; }
+.train-btn { display: flex; align-items: center; justify-content: center; }
 .train-btn small .coin-dot { width: 1.1em; height: 1.1em; }
-@media (prefers-reduced-motion: reduce) { .tnode.next .tn-dot, .tnode.pop .tn-dot { animation: none; } }
+@keyframes tpulse { 50% { transform: scale(1.06); } }
+@keyframes tpop { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .tnode.next .tn-tile, .tnode.pop .tn-tile { animation: none; } }
 /* ---- 상점 */
 .shop-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .6em; margin: 0 -.3em; padding: .1em .3em .7em; -webkit-overflow-scrolling: touch; }
 .shop-scroll > * { flex: none; }
@@ -400,12 +420,17 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
         </div>
       </div>
 
-      <div id="pageUp" class="page pane" hidden>
-        <div class="pane-head"><h2>병영 훈련</h2><span class="chip mini" id="trainLv">훈련 0 / 140</span></div>
+      <div id="pageUp" class="page train-page" hidden>
+        <div class="train-head"><h2 class="outline">병영 훈련</h2><span class="chip mini" id="trainLv">훈련 0 / 140</span></div>
         <div class="train-sum" id="trainSum"></div>
-        <div class="train-track" id="trainTrack" aria-label="훈련 단계"></div>
-        <button id="btnTrain" class="btn gold big train-btn" type="button"><span>훈련</span><small class="go-cost"><span class="coin-dot"></span><b id="trainCost">30</b></small></button>
-        <p class="note" id="trainNote">덜 오른 능력부터 자동으로 올라요 · 꾹 누르면 연속</p>
+        <div class="train-track" id="trainTrack" aria-label="훈련 단계">
+          <div class="train-col" id="trainCol"></div>
+          <div class="train-tip" id="trainTip" hidden><b id="trainTipName"></b><span id="trainTipDesc"></span></div>
+        </div>
+        <div class="train-foot">
+          <button id="btnTrain" class="btn gold big train-btn" type="button"><span>훈련</span><small class="go-cost"><span class="coin-dot"></span><b id="trainCost">30</b></small></button>
+          <p class="note outline" id="trainNote">덜 오른 능력부터 자동으로 올라요 · 꾹 누르면 연속</p>
+        </div>
       </div>
 
       <div id="pageShop" class="page pane shop" hidden>
@@ -587,7 +612,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.46', VERSION_DATE = '2026.10.06', VERSION_NOTE = '게임 시작 로딩 화면 추가 (터치해 시작, 작전 팁)';   // 게시할 때마다 올린다
+const VERSION = 'v0.47', VERSION_DATE = '2026.10.06', VERSION_NOTE = '병영 훈련 화면을 세로 진화 트랙으로 (완료 구간 주황, 노드 말풍선, 10단계 이정표)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2317,29 +2342,57 @@ function trainNext(lv) {
 }
 const trainTxt = (id, n = 1) => { const t = TRAIN_SHORT[id], v = +(t[1] * n).toFixed(1); return id === 'def' ? `${t[0]} ${v}` : `${t[0]} +${v}${t[2]}`; };
 const TRAIN_RANKS = ['훈련병', '이병', '일병', '상병', '병장', '하사', '중사', '상사', '소위', '중위', '대위', '소령', '중령', '대령', '준장'];
+const TRAIN_FULL = { atk: '공격력 +10%', hp: '최대 체력 +10%', rate: '연사 속도 +3%', def: '받는 피해 -0.7', gold: '코인 획득 +10%', xp: '경험치 획득 +5%', spd: '이동 속도 +2%' };
+const trainIco = {};      // 능력별 아이콘 그림 (한 번만 그려 둔다)
+const trainIcoUrl = id => trainIco[id] || (ATLAS.ready ? (trainIco[id] = iconCanvas(id).toDataURL()) : '');
+function trainPlan() {        // 1..TRAIN_MAX 단계별 능력 id
+  const plan = [], base = {}, t = trainLv();
+  for (let k = 0; k < t; k++) { const m = trainNext(base); if (!m) break; plan.push(m.id); base[m.id] = (base[m.id] || 0) + 1; }
+  const hist = save.trainHist || []; for (let k = 0; k < hist.length && k < plan.length; k++) plan[plan.length - hist.length + k] = hist[k];   // 최근 기록은 실제로 오른 것
+  const sim = Object.assign({}, save.meta);
+  while (plan.length < TRAIN_MAX) { const m = trainNext(sim); if (!m) break; plan.push(m.id); sim[m.id] = (sim[m.id] || 0) + 1; }
+  return plan;
+}
+let trainBuilt = '';
 function refreshBarracks(pop) {
   refreshWallet();
-  const t = trainLv(), done = t >= TRAIN_MAX, cost = trainCost(t);
+  const t = trainLv(), done = t >= TRAIN_MAX, cost = trainCost(t), plan = trainPlan();
   setTxt('trainLv', `훈련 ${t} / ${TRAIN_MAX}`);
-  // 지금까지 오른 효과 합계
   const sum = el('trainSum'); sum.textContent = '';
-  for (const m of TRAIN) { const t2 = TRAIN_SHORT[m.id], v = +(t2[1] * (save.meta[m.id] || 0)).toFixed(1), d = mk('div'); d.append(iconCanvas(m.id), mk('b', '', m.id === 'def' ? `-${v}` : `+${v}${t2[2]}`), mk('span', '', t2[0])); sum.append(d); }
-  // 단계 트랙: 지난 3단계 + 다음 단계부터 앞으로 7단계 (아래가 과거, 위가 미래)
-  const tr = el('trainTrack'); tr.textContent = '';
-  const sim = Object.assign({}, save.meta), future = [];
-  for (let k = 0; k < 8 && t + k < TRAIN_MAX; k++) { const m = trainNext(sim); if (!m) break; future.push(m.id); sim[m.id] = (sim[m.id] || 0) + 1; }
-  const hist = (save.trainHist || []).slice(-3);
-  const node = (no, id, cls) => {
-    const n = mk('div', 'tnode ' + cls + (no % 10 === 0 ? ' mile' : '')); const dot = mk('span', 'tn-dot'); dot.append(iconCanvas(id));
-    const label = mk('b', '', trainTxt(id)); if (no % 10 === 0) label.dataset.mile = `${TRAIN_RANKS[Math.min(TRAIN_RANKS.length - 1, no / 10)]} 달성`;
-    n.append(dot, label, mk('span', 'tn-no', String(no))); return n;
-  };
-  hist.forEach((id, k) => tr.append(node(t - hist.length + k + 1, id, 'done' + (pop && k === hist.length - 1 ? ' pop' : ''))));
-  future.forEach((id, k) => tr.append(node(t + k + 1, id, k === 0 ? 'next' : '')));
+  for (const m of TRAIN) { const t2 = TRAIN_SHORT[m.id], v = +(t2[1] * (save.meta[m.id] || 0)).toFixed(1), d = mk('div'), ic = mk('i'); ic.style.backgroundImage = `url(${trainIcoUrl(m.id)})`; d.append(ic, mk('b', '', m.id === 'def' ? `-${v}` : `+${v}${t2[2]}`)); d.title = t2[0]; sum.append(d); }
+  // 트랙: 위가 높은 단계. 처음 한 번 만들고, 이후엔 상태만 바꾼다
+  const col = el('trainCol'), sig = plan.join(',') + '|' + !!ATLAS.ready;
+  if (trainBuilt !== sig) {
+    trainBuilt = sig; col.textContent = '';
+    for (let no = TRAIN_MAX; no >= 1; no--) {
+      const id = plan[no - 1], n = mk('div', 'tnode'); n.dataset.no = no;
+      const tile = mk('button', 'tn-tile'); tile.type = 'button'; tile.setAttribute('aria-label', `${no}단계 ${TRAIN_FULL[id]}`);
+      const ic = mk('i'); ic.style.backgroundImage = `url(${trainIcoUrl(id)})`; tile.append(ic);
+      tile.addEventListener('click', () => showTrainTip(n, id, no));
+      n.append(tile, mk('span', 'tn-name', TRAIN_SHORT[id][0]));
+      if (no % 10 === 0) { const ml = mk('span', 'tn-mile'); ml.append(mk('b', '', String(no / 10))); n.append(ml, mk('span', 'tn-rank', TRAIN_RANKS[Math.min(TRAIN_RANKS.length - 1, no / 10)])); }
+      col.append(n);
+    }
+  }
+  for (const n of col.children) {
+    const no = +n.dataset.no;
+    n.className = 'tnode' + (no <= t ? ' done' : no === t + 1 ? ' next' : '') + (no === t + 1 ? ' edge' : '') + (pop && no === t ? ' pop' : '');
+  }
+  // 다음 단계가 화면 아래쪽 1/3 쯤에 오게
+  const nx = col.querySelector('.tnode.next') || col.lastElementChild, tr = el('trainTrack');
+  if (nx) { const want = nx.offsetTop - tr.clientHeight * 0.58; if (!pop || Math.abs(tr.scrollTop - want) > tr.clientHeight * 0.3) tr.scrollTop = want; else tr.scrollTo({ top: want, behavior: 'smooth' }); }
+  el('trainTip').hidden = true;
   const b = el('btnTrain');
   if (done) { b.disabled = true; b.firstChild.textContent = '훈련 완료'; setTxt('trainCost', 'MAX'); }
   else { b.disabled = save.coins < cost; b.firstChild.textContent = '훈련'; setTxt('trainCost', fmt(cost)); }
 }
+function showTrainTip(n, id, no) {
+  const tip = el('trainTip'); SFX.click();
+  if (!tip.hidden && tip.dataset.no === String(no)) { tip.hidden = true; return; }
+  tip.dataset.no = no; setTxt('trainTipName', `${no}단계 · ${TRAIN_SHORT[id][0]}`); setTxt('trainTipDesc', TRAIN_FULL[id]);
+  tip.hidden = false; tip.style.top = (n.offsetTop - tip.offsetHeight - 2) + 'px';
+}
+
 function doTrain() {
   const t = trainLv(), m = trainNext(save.meta), cost = trainCost(t);
   if (!m || save.coins < cost) { SFX.deny(); return false; }
