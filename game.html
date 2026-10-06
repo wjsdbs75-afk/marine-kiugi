@@ -403,7 +403,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .btn-row .btn { flex: 1; }
 .auto-note { text-align: center; font-size: .85em; color: var(--energy); }
 .auto-note:empty { display: none; }
-/* ---- 로딩 화면: 그림·글꼴을 다 받으면 '화면을 터치해 시작' (이 터치로 소리도 켠다) */
+/* ---- 로딩 화면: 그림·글꼴을 다 받으면 바로 로비로 넘어간다 (소리는 첫 터치 때 켠다) */
 #boot { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: space-between; padding: calc(2.2em + var(--st)) 1.4em calc(1.6em + var(--sb));
   background: radial-gradient(ellipse at 50% 38%, #2a3b63 0%, #141d33 55%, #070a14 100%); transition: opacity .45s ease; touch-action: manipulation; cursor: default; }
 #boot::before, #boot::after { content: ''; position: absolute; left: 0; right: 0; height: .55em; background: repeating-linear-gradient(135deg, var(--hazard) 0 .8em, var(--ink) .8em 1.6em); }
@@ -686,7 +686,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.59', VERSION_DATE = '2026.10.06', VERSION_NOTE = '로비 배치 정리 · 하단 탭 검은 띠 제거';   // 게시할 때마다 올린다
+const VERSION = 'v0.60', VERSION_DATE = '2026.10.06', VERSION_NOTE = '로딩이 끝나면 터치 없이 바로 시작';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -3262,18 +3262,22 @@ let bootOpen = true;
     shown = Math.min(goal, minT, shown + 0.04 + (goal - shown) * 0.12);
     el('bootFill').style.width = (shown * 100).toFixed(1) + '%'; setTxt('bootPct', Math.floor(shown * 100) + '%');
     if (!ready && shown >= 0.999) {
-      ready = true; box.classList.add('ready'); setTxt('bootTxt', '화면을 터치해 시작');
+      ready = true; box.classList.add('ready'); setTxt('bootTxt', '작전 개시');
       const hc = el('bootHelm').getContext('2d'); hc.clearRect(0, 0, 160, 160); sprC(hc, 'i_squad', 80, 80, 150);
+      setTimeout(() => go(null), 450);         // 다 받으면 바로 로비로 (헬멧이 한 번 떠오르는 것만 보여 준다)
     } else if (!ready) setTxt('bootTxt', shown < 0.5 ? '보급품 확인 중' : '강하 준비 중');
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
   const go = e => {
-    if (!ready) return; e.preventDefault(); bootOpen = false; clearInterval(tipTimer);
-    SFX.resume(); SFX.click(); box.classList.add('out'); setTimeout(() => { box.hidden = true; }, 480);
+    if (!ready || !bootOpen) return; if (e) e.preventDefault(); bootOpen = false; clearInterval(tipTimer);
+    SFX.resume(); if (e) SFX.click(); box.classList.add('out'); setTimeout(() => { box.hidden = true; }, 480);
     if (appState === 'lobby' && idleMinutes() >= IDLE_POPUP_MIN) openIdleReport();
   };
   box.addEventListener('pointerdown', go);
+  // 소리: 앱은 바로 켜진다. 브라우저는 첫 터치 전에는 소리를 막으므로, 화면 어디든 처음 누르는 순간 켠다
+  const unlock = () => { SFX.resume(); document.removeEventListener('pointerdown', unlock, true); document.removeEventListener('keydown', unlock, true); };
+  document.addEventListener('pointerdown', unlock, true); document.addEventListener('keydown', unlock, true);
   box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') go(e); });
   box.tabIndex = 0;
 })();
