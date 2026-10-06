@@ -96,7 +96,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .logo .l1 { font-size: 4.4em; color: var(--hazard); }
 .logo .l2 { font-size: 3.5em; color: var(--fg); margin-left: .9em; }
 #pageHome > .logo { align-self: flex-start; align-items: flex-start; margin-left: 1.1em; }
-#pageHome > .logo .l2 { margin-left: calc(4.4em * 1.12 / 3.5); margin-top: -.12em; }     /* '마린' 의 '린' 아래 가운데에서 시작 */
+#pageHome > .logo .l2 { margin-left: calc(4.4em * 1.12 / 3.5); margin-top: .1em; }      /* '린' 아래 가운데에서 시작, 윗줄과 살짝 띄움 */
+#pageHome > .logo .l3 { align-self: flex-end; font-size: 1.55em; color: var(--hazard); margin-top: .15em; letter-spacing: .04em; }   /* '우기' 아래에 작게 */     /* '마린' 의 '린' 아래 가운데에서 시작 */
 .tagline { align-self: center; font-family: var(--font-display); font-weight: 400; font-size: .95em; background: var(--ink); color: var(--hazard); padding: .22em .9em; border-radius: .3em; letter-spacing: .04em; }
 .stage-sel { display: flex; align-items: center; gap: .55em; }
 .stage-card { flex: 1; min-width: 0; text-align: center; padding: .4em .5em .5em; display: flex; flex-direction: column; }
@@ -456,8 +457,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       <div id="pageHome" class="page">
         <button id="btnDex" class="btn sq dex-btn" type="button" aria-label="몬스터 도감 열기"><canvas id="dexIco" width="64" height="64" aria-hidden="true"></canvas><small>도감</small></button>
         <span class="home-ver" id="homeVer"></span>
-        <h1 class="logo"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span></h1>
-        <p class="tagline">강화복 해병 서바이벌</p>
+        <h1 class="logo"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span><span class="l3 outline">서바이벌</span></h1>
         <div class="grow"></div>
         <button id="btnIdle" class="btn gold sm idle-btn" type="button">작전 보고 <b id="idleInfo">+0</b></button>
         <div class="stage-sel">
@@ -692,7 +692,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.61', VERSION_DATE = '2026.10.06', VERSION_NOTE = '로비 위 줄을 위로 · 하단 탭 검은 띠 제거';   // 게시할 때마다 올린다
+const VERSION = 'v0.62', VERSION_DATE = '2026.10.06', VERSION_NOTE = '로비 로고 정리 · 해병 왼쪽 자세';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2455,12 +2455,12 @@ function renderLobby(c) {
   c.save(); c.scale(z, z);
   const cx = Math.sin(T * 0.12) * 4 - vw / 2, cy = -vh * 0.53;
   c.translate(-cx, -cy); drawGround(c, st, cx, cy, vw, vh);
-  const sx = -12;     // 수송선이 화면 왼쪽에 잘리지 않게 (가로 160 이 화면 폭 안에 들어오게)
+  const sx = -26;     // 수송선이 화면 왼쪽에 잘리지 않게 (가로 160 이 화면 폭 안에 들어오게)
   shadow(c, sx, -30, 56, 0.24);
   drawShip(c, sx, -30 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
   const n = squadUnlocked() ? save.sqSlots || 0 : 0;
-  for (let i = 0; i < n; i++) drawMarine(c, i ? 62 : -58, 40, { dir: 2, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
-  drawMarine(c, 0, 58, { dir: 2, idle: T * 3, s: 1.9 });       // 정면(좌우 대칭) 자세로 가운데
+  for (let i = 0; i < n; i++) drawMarine(c, i ? 66 : -54, 40, { dir: 3, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
+  drawMarine(c, 8, 58, { dir: 3, idle: T * 3, s: 1.9 });       // 예전 자세를 좌우로 뒤집어 왼쪽으로 총을 든 채 가운데
   c.restore();
 }
 
