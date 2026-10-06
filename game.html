@@ -616,7 +616,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.49', VERSION_DATE = '2026.10.06', VERSION_NOTE = '달릴 때 몸이 커졌다 작아졌다 보이던 것 고침, 분대원 해금·슬롯 개편';   // 게시할 때마다 올린다
+const VERSION = 'v0.50', VERSION_DATE = '2026.10.06', VERSION_NOTE = '방향을 틀 때 해병 크기가 튀던 것 고침 (북동·북쪽 그림 크기 보정)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1075,14 +1075,14 @@ function dirStep(cur, ang) {          // 경계에서 떨리지 않게 30도 넘
   return Math.abs(df) > 0.55 ? (Math.round(ang / (Math.PI / 4)) & 7) : cur;
 }
 // 방향별 총구 위치: 바닥 기준 (dx, gy) 와 높이 h
+// 방향별 그림 크기 보정: 북동·북쪽 그림은 몸(헬멧~발)이 다른 방향보다 10%·7% 작게 그려져 있어
+// 방향을 틀 때마다 몸이 커졌다 작아졌다 보였다. 그 방향 그림을 통째로 키워 맞춘다 (발 기준점은 그대로).
+const DIR_SC = { ne_: 1.10, n_: 1.06 };
 function muzzleOf(dir, s) {
-  const d = DIRS[dir & 7], mz = ATLAS.map._muz[d[0]], H = HERO_H * s, gy = Math.sin((dir & 7) * Math.PI / 4) * 9 * s;
+  const d = DIRS[dir & 7], mz = ATLAS.map._muz[d[0]], H = HERO_H * s * (DIR_SC[d[0]] || 1), gy = Math.sin((dir & 7) * Math.PI / 4) * 9 * s;
   return { dx: (d[1] ? -1 : 1) * mz[0] * H, gy, h: mz[1] * H + gy };
 }
 const RUN_MIX = 0.12;        // 한 장을 보여 주는 시간의 끝 12% 동안 다음 장과 섞어 넘긴다 (길면 겹친 잔상에 몸이 부풀어 보인다)
-// 달리기 장별 세로 보정 (그림 px). 숙인 장은 헬멧이 낮고 한 발로 선 장은 높아 걸을 때 몸이 커졌다 작아졌다 보였다.
-// 헬멧 높이 출렁임을 서 있는 그림 기준 40% 로 줄인 값.
-const HERO_RUN_OY = {"": [-2.8, -8.6, 8.1], "se_": [-3.0, -3.8, 8.3], "s_": [-1.5, 0.1, 9.5], "ne_": [0.9, 1.7, 9.3], "n_": [0.1, -0.4, 9.5]};
 // 몸통을 한 장의 그림 칸(BODY)에 먼저 그린 뒤 가로 띠로 잘라 옮겨 그린다.
 // 그래야 반동은 상체에만 주고(다리는 땅에 붙어 있음), 다리는 아래로 갈수록 살짝 가늘게 할 수 있다.
 const BODY_W = 300, BODY_H = 270, BODY_AX = 150, BODY_AY = 262;   // 그림 칸 크기와 발 기준점 (그림 px)
@@ -1107,7 +1107,7 @@ function bodyBlit(c, x, y, K, flip, sy, rx, ry, alpha) {
   c.restore();
 }
 function drawMarine(c, x, y, o) {
-  const s = o.s || 1, dir = (o.dir | 0) & 7, d = DIRS[dir], H = HERO_H * s, lift = o.lift || 0, K = H / HERO_PX, fx = d[1] ? -1 : 1;
+  const s = o.s || 1, dir = (o.dir | 0) & 7, d = DIRS[dir], H = HERO_H * s, lift = o.lift || 0, K = H / HERO_PX * (DIR_SC[d[0]] || 1), fx = d[1] ? -1 : 1;
   if (!ATLAS.ready || !ATLAS.map['hero_' + d[0] + 'idle']) return;
   shadow(c, x, y + 1, 16 * s, 0.26);
   if (o.stim) {
@@ -1126,7 +1126,7 @@ function drawMarine(c, x, y, o) {
     const N = R.length, u = (((o.walk / TAU * N) % N) + N) % N, i = Math.floor(u) % N, j = (i + 1) % N, fr = u - Math.floor(u);
     const t = fr > 1 - RUN_MIX ? (k => k * k * (3 - 2 * k))((fr - (1 - RUN_MIX)) / RUN_MIX) : 0;
     ty = lerp(R[i][0], R[j][0], t);
-    const RO = HERO_RUN_OY[d[0]] || [R[0][1], R[1][1], R[2][1]], nA = 'hero_' + d[0] + 'r' + i, nB = 'hero_' + d[0] + 'r' + j, oa = [0, RO[i]], ob = [0, RO[j]];
+    const nA = 'hero_' + d[0] + 'r' + i, nB = 'hero_' + d[0] + 'r' + j, oa = [0, R[i][1]], ob = [0, R[j][1]];
     o._body = () => {
       bodyG.globalCompositeOperation = 'source-over'; bodyG.globalAlpha = 1; bodyG.clearRect(0, 0, BODY_W, BODY_H);
       if (t > 0.02 && t < 0.98) { bodyG.globalCompositeOperation = 'lighter'; bodyPut(nA, v, 1 - t, oa[1]); bodyPut(nB, v, t, ob[1]); bodyG.globalCompositeOperation = 'source-over'; }
