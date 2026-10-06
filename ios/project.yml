@@ -37,6 +37,7 @@ targets:
         UILaunchScreen:
           UIColorName: Night
         UIRequiresFullScreen: true
+        UIStatusBarHidden: true                     # 켜는 순간부터 상태 바를 숨긴다
         UIStatusBarStyle: UIStatusBarStyleLightContent
         UIViewControllerBasedStatusBarAppearance: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

@@ -28,7 +28,9 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
     private var startSeq = 0
     private var lastCrashAt: Date?
 
-    // 상태 바는 그대로 두고 밝은 글자로. 아래 홈 막대는 잠시 뒤 흐려지게
+    // 상태 바(시계·배터리)는 숨겨 게임이 화면 전체를 덮는다. 노치·다이내믹 아일랜드 높이만큼은 페이지가 env(safe-area-inset-top) 으로 민다.
+    // 아래 홈 막대는 잠시 뒤 흐려지게
+    override var prefersStatusBarHidden: Bool { true }
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .bottom }

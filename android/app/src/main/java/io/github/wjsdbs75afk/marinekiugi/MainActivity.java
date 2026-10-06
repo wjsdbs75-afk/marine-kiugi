@@ -92,7 +92,7 @@ public class MainActivity extends Activity {
         setUpWindow();
         buildViews();
         setContentView(root);
-        hideNavigationBar();   // 화면(DecorView)이 생긴 뒤에 불러야 한다. 그 전에 부르면 안드로이드 11 이상에서 앱이 죽는다
+        hideSystemBars();   // 화면(DecorView)이 생긴 뒤에 불러야 한다. 그 전에 부르면 안드로이드 11 이상에서 앱이 죽는다
         if (Build.VERSION.SDK_INT >= 33) {
             Api33.registerBack(this, this::handleBack);
         }
@@ -103,8 +103,8 @@ public class MainActivity extends Activity {
 
     /**
      * 게임 화면을 상태 바와 내비게이션 바 뒤까지 깔고, 꺼지지 않게 한다.
-     * 하단 내비게이션 바(뒤로·홈·최근)는 몰입 모드로 숨긴다. 아래에서 쓸어 올리면 잠깐 나타났다 사라진다.
-     * 상태 바는 그대로 둔다.
+     * 상태 바(시계·배터리)와 하단 내비게이션 바(뒤로·홈·최근)는 몰입 모드로 숨겨 게임이 화면 전체를 덮는다.
+     * 위·아래에서 쓸어 넘기면 잠깐 나타났다 사라진다. 카메라 구멍(노치) 높이만큼은 게임이 UI 를 민다.
      */
     private void setUpWindow() {
         Window w = getWindow();
@@ -122,25 +122,26 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 내비게이션 바를 숨긴다. 다이얼로그·키보드·다른 앱에 다녀오면 시스템이 다시 보이게 할 수 있어 돌아올 때마다 부른다. */
-    private void hideNavigationBar() {
+    /** 상태 바와 내비게이션 바를 숨긴다. 다이얼로그·키보드·다른 앱에 다녀오면 시스템이 다시 보이게 할 수 있어 돌아올 때마다 부른다. */
+    private void hideSystemBars() {
         try {
-            hideNavigationBarUnchecked();
+            hideSystemBarsUnchecked();
         } catch (RuntimeException e) {
             // 바를 못 숨겨도 게임은 그대로 뜨게 한다
         }
     }
 
     @SuppressWarnings("deprecation")
-    private void hideNavigationBarUnchecked() {
+    private void hideSystemBarsUnchecked() {
         Window w = getWindow();
         if (Build.VERSION.SDK_INT >= 30) {
-            Api30.hideNavigationBar(w);
+            Api30.hideSystemBars(w);
         } else {
             // LAYOUT_STABLE 은 넣지 않는다. 넣으면 숨긴 바의 높이까지 여백으로 잡혀 게임이 맨 아래까지 내려오지 않는다
             w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
     }
@@ -149,7 +150,7 @@ public class MainActivity extends Activity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
-            hideNavigationBar();
+            hideSystemBars();
         }
     }
 
@@ -170,6 +171,10 @@ public class MainActivity extends Activity {
             } else {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
+                if (Build.VERSION.SDK_INT >= 28 && insets.getDisplayCutout() != null) {   // 상태 바를 숨겨도 카메라 구멍은 피한다
+                    top = Math.max(top, insets.getDisplayCutout().getSafeInsetTop());
+                    bottom = Math.max(bottom, insets.getDisplayCutout().getSafeInsetBottom());
+                }
             }
             if (top != safeTopPx || bottom != safeBottomPx) {
                 safeTopPx = top;
@@ -689,14 +694,14 @@ public class MainActivity extends Activity {
             return new int[] {i.top, i.bottom};
         }
 
-        /** 숨긴 내비게이션 바는 쓸어 올릴 때만 잠깐 화면 위에 겹쳐 나온다 (게임 배치는 움직이지 않는다). */
-        static void hideNavigationBar(Window w) {
+        /** 숨긴 상태 바·내비게이션 바는 쓸어 넘길 때만 잠깐 화면 위에 겹쳐 나온다 (게임 배치는 움직이지 않는다). */
+        static void hideSystemBars(Window w) {
             WindowInsetsController c = w.getDecorView().getWindowInsetsController();
             if (c == null) {
                 return;
             }
             c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            c.hide(WindowInsets.Type.navigationBars());
+            c.hide(WindowInsets.Type.systemBars());
         }
     }
 
@@ -713,7 +718,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        hideNavigationBar();
+        hideSystemBars();
         if (web != null) {
             web.onResume();
         }
