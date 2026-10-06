@@ -616,7 +616,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.50', VERSION_DATE = '2026.10.06', VERSION_NOTE = '방향을 틀 때 해병 크기가 튀던 것 고침 (북동·북쪽 그림 크기 보정)';   // 게시할 때마다 올린다
+const VERSION = 'v0.51', VERSION_DATE = '2026.10.06', VERSION_NOTE = '스테이지 30까지 (챕터 2 고등 종족, 챕터 3 기계 군단), 보스전 울타리, 대사 수정';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -633,7 +633,30 @@ const STAGES = [
   { name: '독안개 늪',   g1: '#839f58', g2: '#74904b', deco: ['puddle', 'tuft', 'mush'],   boss: '늪의 주인',    hue: 90 },
   { name: '운석 분지',   g1: '#625f7e', g2: '#555270', deco: ['crater', 'rock', 'crystal'], boss: '별 먹는 자',  hue: 280 },
   { name: '둥지 심장부', g1: '#96527a', g2: '#85466b', deco: ['egg', 'crack', 'egg'],      boss: '어미 군주',    hue: 320 },
+  // 챕터 2 (11~20): 고등 종족 '크실 제국'. 원거리·고속 병력이 많고 대열을 짜서 몰려온다
+  { name: '착륙 거점',   g1: '#7f9cc0', g2: '#7090b5', deco: ['rock', 'crystal', 'rock'],   boss: '정찰 지휘관',  hue: 200 },
+  { name: '수정 첨탑',   g1: '#8ec9d6', g2: '#7dbac8', deco: ['crystal', 'ice', 'crystal'], boss: '수정 사제',    hue: 180 },
+  { name: '광자 평원',   g1: '#d8d39a', g2: '#cac487', deco: ['crystal', 'tuft', 'rock'],   boss: '광자 기사',    hue: 55 },
+  { name: '사령부 외곽', g1: '#9a9eb2', g2: '#8b8fa4', deco: ['rubble', 'crystal', 'rock'], boss: '전쟁 군주',    hue: 230 },
+  { name: '유전 실험실', g1: '#a6d3a6', g2: '#95c595', deco: ['egg', 'puddle', 'crystal'],  boss: '유전 박사',    hue: 120 },
+  { name: '궤도 승강장', g1: '#6f7590', g2: '#626882', deco: ['crater', 'rubble', 'crystal'], boss: '궤도 포병장', hue: 260 },
+  { name: '사이오닉 사원', g1: '#b49ad6', g2: '#a48bc9', deco: ['crystal', 'mush', 'crystal'], boss: '예언자',    hue: 285 },
+  { name: '방벽 요새',   g1: '#8a8f86', g2: '#7c8178', deco: ['rubble', 'rock', 'rubble'],  boss: '방벽 수호자',  hue: 100 },
+  { name: '왕실 정원',   g1: '#7fbf9a', g2: '#70b08b', deco: ['flower', 'crystal', 'tuft'], boss: '근위대장',     hue: 150 },
+  { name: '제국 왕좌',   g1: '#c9a75e', g2: '#bb9851', deco: ['crystal', 'rubble', 'crystal'], boss: '크실 황제',  hue: 40 },
+  // 챕터 3 (21~30): 공허의 기계 군단. 단단하고 터지는 개체가 많다
+  { name: '고철 황무지', g1: '#9c8a74', g2: '#8d7b66', deco: ['rubble', 'rock', 'rubble'],  boss: '분쇄기 X-1',   hue: 20 },
+  { name: '녹슨 공장',   g1: '#8a7262', g2: '#7c6555', deco: ['rubble', 'crack', 'rubble'], boss: '조립 공장장',  hue: 15 },
+  { name: '전류 협곡',   g1: '#5d6f8c', g2: '#52637e', deco: ['crystal', 'rock', 'crack'],  boss: '방전 거인',    hue: 210 },
+  { name: '냉각 저장고', g1: '#a9c4d6', g2: '#9ab6c9', deco: ['ice', 'rubble', 'ice'],      boss: '냉동 파쇄기',  hue: 195 },
+  { name: '용광로 심층', g1: '#6e3c34', g2: '#61332c', deco: ['crack', 'rubble', 'crack'],  boss: '용광로 군주',  hue: 5 },
+  { name: '데이터 미궁', g1: '#3f5a5c', g2: '#365051', deco: ['crystal', 'rubble', 'crystal'], boss: '논리 핵',    hue: 170 },
+  { name: '중력 붕괴지', g1: '#4d4766', g2: '#433e5a', deco: ['crater', 'rock', 'crater'],  boss: '중력 포식자',  hue: 265 },
+  { name: '차원 균열',   g1: '#5a3f6e', g2: '#4f3661', deco: ['crack', 'crystal', 'crater'], boss: '균열 감시자', hue: 300 },
+  { name: '공허 회랑',   g1: '#2f3448', g2: '#282c3e', deco: ['crater', 'crystal', 'rubble'], boss: '공허 사도',  hue: 240 },
+  { name: '특이점',      g1: '#241f33', g2: '#1d192b', deco: ['crater', 'crack', 'crystal'], boss: '특이점 군주', hue: 330 },
 ];
+const CHAPTER = s => s <= 10 ? 1 : s <= 20 ? 2 : 3;
 const ROUNDS = 10;
 const ROUND_DUR = 20;
 
@@ -658,9 +681,32 @@ const MIX = [
   [['runner', 5, 1], ['spitter', 5, 1], ['bomber', 4, 2], ['tank', 2, 3]],
   [['bat', 6, 1], ['runner', 5, 1], ['tank', 3, 2], ['bomber', 3, 2], ['spitter', 3, 3]],
   [['blob', 4, 1], ['runner', 5, 1], ['bat', 5, 1], ['spitter', 4, 1], ['tank', 3, 2], ['bomber', 4, 2]],
+  // 챕터 2: 고등 종족 — 원거리(spitter)·고속(runner, bat) 비중이 높다
+  [['runner', 6, 1], ['spitter', 4, 1], ['bat', 3, 2], ['tank', 1.5, 4]],
+  [['spitter', 5, 1], ['runner', 5, 1], ['bat', 4, 2], ['tank', 1.5, 3]],
+  [['runner', 7, 1], ['bat', 5, 1], ['spitter', 4, 2], ['bomber', 2, 4]],
+  [['spitter', 6, 1], ['runner', 5, 1], ['tank', 2, 2], ['bat', 3, 2]],
+  [['blob', 4, 1], ['spitter', 5, 1], ['runner', 5, 1], ['tank', 2, 3], ['bomber', 2, 4]],
+  [['bat', 6, 1], ['spitter', 5, 1], ['runner', 4, 1], ['tank', 2, 3]],
+  [['spitter', 6, 1], ['bat', 5, 1], ['runner', 5, 1], ['bomber', 3, 3], ['tank', 2, 3]],
+  [['tank', 3, 1], ['spitter', 5, 1], ['runner', 5, 1], ['bat', 4, 2]],
+  [['runner', 6, 1], ['bat', 6, 1], ['spitter', 6, 1], ['tank', 2.5, 2], ['bomber', 3, 3]],
+  [['spitter', 6, 1], ['runner', 6, 1], ['bat', 5, 1], ['tank', 3, 2], ['bomber', 3, 2]],
+  // 챕터 3: 기계 군단 — 단단한 tank, 터지는 bomber 비중이 높다
+  [['blob', 5, 1], ['tank', 2.5, 1], ['bomber', 3, 2], ['runner', 3, 2]],
+  [['tank', 3, 1], ['bomber', 4, 1], ['blob', 4, 1], ['spitter', 2, 3]],
+  [['runner', 5, 1], ['bomber', 4, 1], ['tank', 3, 2], ['bat', 3, 2]],
+  [['tank', 3.5, 1], ['blob', 5, 1], ['bomber', 4, 2], ['spitter', 3, 3]],
+  [['bomber', 6, 1], ['tank', 3, 1], ['runner', 4, 1], ['spitter', 3, 2]],
+  [['tank', 4, 1], ['spitter', 4, 1], ['bat', 4, 1], ['bomber', 4, 2]],
+  [['tank', 4, 1], ['bomber', 5, 1], ['runner', 5, 1], ['blob', 3, 1]],
+  [['bat', 5, 1], ['bomber', 5, 1], ['tank', 4, 1], ['spitter', 4, 2]],
+  [['tank', 5, 1], ['bomber', 5, 1], ['runner', 5, 1], ['spitter', 4, 1], ['bat', 4, 2]],
+  [['tank', 5, 1], ['bomber', 6, 1], ['runner', 5, 1], ['spitter', 5, 1], ['bat', 5, 1], ['blob', 3, 1]],
 ];
-const stageHpMul = s => Math.pow(1.26, s - 1);
-const stageDmgMul = s => 1 + 0.2 * (s - 1);
+const stageHpMul = s => Math.pow(1.26, Math.min(s, 10) - 1) * Math.pow(1.17, clamp(s - 10, 0, 10)) * Math.pow(1.19, Math.max(0, s - 20));
+const stageDmgMul = s => 1 + 0.2 * (Math.min(s, 10) - 1) + 0.25 * clamp(s - 10, 0, 10) + 0.3 * Math.max(0, s - 20);
+const stageSpdMul = s => [1, 1.08, 1.14][CHAPTER(s) - 1];     // 챕터가 오를수록 적이 조금 빠르다
 
 // ---------- 전투 중 선택지 (레벨업)
 const UPS = [
@@ -815,15 +861,15 @@ const rankOf = lv => RANKS[Math.min(RANKS.length - 1, lv - 1)];     // 레벨마
 const LV_MAX = 20;     // 그 뒤로는 경험치 바가 찰 때마다 보급(체력 회복 + 코인)
 
 const BARKS = {
-  land:  ['강하 완료. 작전 개시.', '강하 완료. 청소를 시작한다.', '구역에 진입했다.', '교전을 준비하겠다.'],
-  stim:  ['투약 완료. 밀어붙인다.', '심장이 터질 것 같군.', '지금이다, 몰아쳐!', '시야가 선명해지는군.'],
-  level: ['좋았어!', '감 잡았다.', '진급 명령 수령.'],
-  low:   ['의무병 어디 갔어?!', '피해가 크다, 버텨!', '아직 안 끝났다.'],
-  boss:  ['대형 개체 접근!', '큰 놈이다. 집중 사격!'],
+  land:  ['강하 완료. 작전 개시.', '강하 완료. 청소를 시작한다.', '지원이 올 때까지 버티겠다.', '진입 완료. 교전 시작.'],
+  stim:  ['투약 완료. 좀 살겠군.', '심장이 터지겠군.', '지금이다, 몰아쳐!', '시야가 선명해지는군.'],
+  level: ['진급 완료.', '감 잡았다.', '진급을 끝냈다.'],
+  low:   ['의무병 어디 갔어?!', '적이 너무 많다. 지원을 요청한다.', '아직 안 끝났다.'],
+  boss:  ['대형 개체 접근!', '죽기 딱 좋은 날이로군.'],
   clear: ['구역 확보. 복귀한다.', '임무 완료. 이상 없음.'],
-  squad: ['지원 병력 합류.', '분대, 대형 유지!', '신병 받아라.'],
-  medic: ['의무병 합류. 엄호 바란다.'],
-  strike: ['폭격 요청. 좌표 전송.', '화력 지원 바란다!', '엎드려! 폭격 온다!', '그대로 쏟아부어!'],
+  squad: ['지원 병력 합류.', '분대, 대형 유지!', '신병 받았다.'],
+  medic: ['의무병 합류. 엄호 바란다.', '의무병이 합류했다.'],
+  strike: ['좌표를 전송했다.', '화력 지원 바란다!', '폭격을 요청했다. 모두 엎드려!'],
 };
 
 // ---------- 저장 (이 브라우저에만 저장됨)
@@ -1213,12 +1259,16 @@ function drawShip(c, x, y, o) {
 // ---------- 몬스터
 const MON = { blob: ['m_blob', 29], runner: ['m_runner', 23], bat: ['m_bat', 34], spitter: ['m_spitter', 36], tank: ['m_tank', 40], bomber: ['m_bomber', 32] };
 const MON_COL = { blob: '#d24fd0', runner: '#f0862c', bat: '#8f63d8', spitter: '#84c63c', tank: '#7088b8', bomber: '#ff6a3a', boss: '#ffd24a' };
-const STAGE_HUE = [0, 0, 0, 0, 0, 40, 40, -70, -70, 160];
+const STAGE_HUE = [0, 0, 0, 0, 0, 40, 40, -70, -70, 160,
+  180, 150, 60, 200, 120, 230, 260, 90, 140, 30,      // 챕터 2
+  20, 15, 200, 170, 350, 160, 250, 290, 220, 320];     // 챕터 3
+const BOSS_HUE = [0, 150, 220];      // 챕터별 보스 색 (1~10 보스 그림을 돌려 쓴다)
 function drawEnemy(c, e) {
   const t = e.t + e.seed, flip = (e.face || 1) < 0;
   let name, h, lift = 0, sx = 1, sy = 1, rot = 0, ox = 0, v = null;
   if (e.boss) {
-    name = 'boss' + G.stage; const m = ATLAS.map[name]; h = 104 * m[3] / Math.max(m[2], m[3]);
+    name = 'boss' + ((G.stage - 1) % 10 + 1); const m = ATLAS.map[name]; h = 104 * m[3] / Math.max(m[2], m[3]) * (1 + 0.06 * (CHAPTER(G.stage) - 1));
+    const bh = BOSS_HUE[CHAPTER(G.stage) - 1] + (G.stage - 1) % 10 * 7; if (G.stage > 10) v = 'hue' + bh;
     sy = 1 + Math.sin(t * 4) * 0.03; sx = 1 - Math.sin(t * 4) * 0.02;
     if (e.mode === 'wind') ox = Math.sin(t * 60) * 2;
   } else {
@@ -1456,7 +1506,7 @@ function updateMedic(dt) {
   const ba = p.aim + Math.PI + 0.95, bx = p.x + Math.cos(ba) * 40, by = p.y + Math.sin(ba) * 26;
   const dx = bx - m.x, dy = by - m.y, d = Math.hypot(dx, dy) || 1;
   m.moving = false;
-  if (d > 8) { const sp = Math.min((d - 8) * 8, p.speed * 1.9); m.x += dx / d * sp * dt; m.y += dy / d * sp * dt; m.moving = sp > 14; }
+  if (d > 8) { const sp = Math.min((d - 8) * 8, p.speed * 1.9); m.x += dx / d * sp * dt; m.y += dy / d * sp * dt; m.moving = sp > 14; arenaClamp(m, 10); }
   if (m.moving) m.walk += dt * 16; else m.idle += dt * 3;
   const tx = p.x - m.x, ty = p.y - m.y, dp = Math.hypot(tx, ty);
   m.healing = !p.dead && p.hp < p.maxHp && dp < 110;
@@ -1496,6 +1546,7 @@ function startRound(n) {
   if (n === 5) spawnElite();
 }
 function spawnPos() {
+  const ar = G.arena; if (ar && !ar.out) { const an = rand(TAU); return { x: ar.x + Math.cos(an) * ar.rx * 0.9, y: ar.y + Math.sin(an) * ar.ry * 0.9 }; }
   const hw = VW / 2 + 36, hh = VH / 2 + 46, cx = G.p.x, cy = G.p.y;
   const per = Math.random() * (hw + hh) * 4;
   if (per < hw * 2) return { x: cx - hw + per, y: cy - hh };
@@ -1507,7 +1558,7 @@ function makeEnemy(type, x, y, o = {}) {
   const d = ETYPES[type], s = G.stage, hm = stageHpMul(s) * (1 + 0.07 * (G.round - 1)) * (o.hpMul || 1);
   const hue = (d.hue + G.st.hue * 0.22) % 360;
   const e = {
-    type, x, y, hp: d.hp * hm, maxHp: d.hp * hm, spd: d.spd * rand(0.9, 1.1), dmg: d.dmg * stageDmgMul(s), r: d.r * (o.scale || 1), xp: d.xp * (o.xpMul || 1),
+    type, x, y, hp: d.hp * hm, maxHp: d.hp * hm, spd: d.spd * rand(0.9, 1.1) * stageSpdMul(s), dmg: d.dmg * stageDmgMul(s), r: d.r * (o.scale || 1), xp: d.xp * (o.xpMul || 1),
     t: 0, seed: rand(10), flash: 0, kx: 0, ky: 0, face: 1, cd: rand(1.2, 2.6), prime: 0, elite: !!o.elite, dead: false,
     c1: MON_COL[type], c2: MON_COL[type],
   };
@@ -1523,7 +1574,7 @@ function spawnTick(dt) {
   if (G.enemies.length >= 130) return;
   const r = G.round;
   const interval = Math.max(0.26, 0.75 - 0.045 * r) / (G.bossSpawned ? 0.55 : 1);
-  const n = 1 + Math.floor(r / 4);
+  const n = 1 + Math.floor(r / 4) + (CHAPTER(G.stage) >= 3 ? 1 : 0);
   G.spawnAcc += dt;
   while (G.spawnAcc >= interval) { G.spawnAcc -= interval; for (let i = 0; i < n; i++) { const q = spawnPos(); makeEnemy(pickType(), q.x, q.y); } }
 }
@@ -1532,10 +1583,42 @@ function spawnElite() {
   const type = mix.some(m => m[0] === 'tank') ? 'tank' : mix[0][0];
   makeEnemy(type, q.x, q.y, { hpMul: type === 'tank' ? 5 : 14, scale: 1.45, xpMul: type === 'tank' ? 3 : 12, elite: true });
 }
+// 보스전 울타리: 보스가 나오면 해병 둘레에 세로로 긴 타원 울타리를 친다. 해병·분대·적 모두 안에서만 움직인다.
+const ARENA_IN = 0.6;      // 울타리가 내려오는 시간 (초)
+function makeArena() {
+  const p = G.p, a = { x: p.x, y: p.y - 10, rx: VW * 0.47, ry: VH * 0.34, t: 0, out: 0 };
+  G.arena = a;
+  for (const e of G.enemies) if (!e.dead && !e.boss && arenaOut(e, 0) > 1) { e.dead = true; burst(e.x, e.y - e.r, e.c1, 4, 90); }   // 밖에 있던 적은 정리
+  G.fx.push({ k: 'ring', x: a.x, y: a.y, r: a.rx, t: 0, dur: 0.5, col: '#ff6a5a' }); shake(5);
+}
+const arenaOut = (o, pad) => { const a = G.arena; return Math.hypot((o.x - a.x) / (a.rx - pad), (o.y - a.y) / (a.ry - pad)); };   // 1 보다 크면 밖
+function arenaClamp(o, pad) {
+  const a = G.arena; if (!a || a.out || a.t < ARENA_IN) return false;
+  const d = arenaOut(o, pad); if (d <= 1) return false;
+  o.x = a.x + (o.x - a.x) / d; o.y = a.y + (o.y - a.y) / d; return true;
+}
+function drawArena(c, T, cx, cy) {
+  const a = G.arena; if (!a) return;
+  const k = a.out ? Math.max(0, 1 - a.out / 0.5) : Math.min(1, a.t / ARENA_IN), sc = 1 + (1 - k) * 0.6, rx = a.rx * sc, ry = a.ry * sc;
+  c.save(); c.globalAlpha = k;
+  // 울타리 밖은 어둡게
+  c.beginPath(); c.rect(cx - 20, cy - 20, VW + 40, VH + 40); c.ellipse(a.x, a.y, rx, ry, 0, 0, TAU); c.fillStyle = 'rgba(8,10,24,.42)'; c.fill('evenodd');
+  // 에너지 띠
+  c.strokeStyle = 'rgba(255,80,60,.35)'; c.lineWidth = 9; ell(c, a.x, a.y, rx, ry); c.stroke();
+  c.strokeStyle = `rgba(255,${150 + 60 * Math.sin(T * 8) | 0},120,.95)`; c.lineWidth = 2.4; c.setLineDash([10, 7]); c.lineDashOffset = -T * 40; ell(c, a.x, a.y, rx, ry); c.stroke(); c.setLineDash([]);
+  // 기둥
+  for (let i = 0; i < 28; i++) {
+    const an = i / 28 * TAU, px = a.x + Math.cos(an) * rx, py = a.y + Math.sin(an) * ry;
+    c.fillStyle = '#20263a'; c.fillRect(px - 2.2, py - 13, 4.4, 13); c.strokeStyle = '#0a0f1c'; c.lineWidth = 1; c.strokeRect(px - 2.2, py - 13, 4.4, 13);
+    c.fillStyle = Math.sin(T * 6 + i) > 0 ? '#ff6a5a' : '#ffb04a'; c.beginPath(); c.arc(px, py - 14, 2.3, 0, TAU); c.fill();
+  }
+  c.restore();
+}
 function spawnBoss() {
+  makeArena();
   const s = G.stage, hp = (1500 + 160 * s) * stageHpMul(s), hue = (G.st.hue + 320) % 360;
   const e = {
-    type: 'boss', boss: true, x: G.p.x + rand(-60, 60), y: G.p.y - VH / 2 - 60, hp, maxHp: hp, spd: 40 + s, baseSpd: 40 + s, dmg: 15 * stageDmgMul(s), r: 34, xp: 40,
+    type: 'boss', boss: true, x: G.arena.x + rand(-40, 40), y: G.arena.y - G.arena.ry * 0.62, hp, maxHp: hp, spd: 40 + s, baseSpd: 40 + s, dmg: 15 * stageDmgMul(s), r: 34, xp: 40,
     t: 0, seed: 0, flash: 0, kx: 0, ky: 0, face: 1, cd: 2.6, pat: 0, mode: null, modeT: 0, mx: 0, my: 1, dead: false, prime: 0,
     c1: MON_COL.boss, c2: MON_COL.boss,
   };
@@ -1595,7 +1678,7 @@ function onDeath() {
 }
 function onBossDead(e) {
   for (const o of G.enemies) { if (!o.dead) { o.dead = true; burst(o.x, o.y - o.r, o.c1, 5, 110); } }
-  G.ebullets.length = 0; G.warns.length = 0;
+  G.ebullets.length = 0; G.warns.length = 0; if (G.arena) G.arena.out = 0.001;
   for (let i = 0; i < 5; i++) G.fx.push({ k: 'boom', x: e.x + rand(-40, 40), y: e.y - rand(0, 50), r: rand(40, 80), t: -i * 0.12, dur: 0.4, col: i % 2 ? '#ffd24a' : '#ff8f5e' });
   shake(12); SFX.boom(); G.flash = 0.5; G.flashCol = '255,255,255';
   G.coins += Math.round(30 * G.stage * G.p.coinMul);
@@ -1670,6 +1753,7 @@ function autoMove() {
     if (!b.seen) continue;
     const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 48) { const w = (48 - d) / 48; vx += -b.vy / 110 * w * 1.2 + dx / d * w * 0.8; vy += b.vx / 110 * w * 1.2 + dy / d * w * 0.8; }
   }
+  if (G.arena && !G.arena.out) { const ar = G.arena, od = arenaOut(p, 0); if (od > 0.78) { const k = (od - 0.78) * 6; vx -= (p.x - ar.x) / ar.rx * k; vy -= (p.y - ar.y) / ar.ry * k; } }
   // 바닥 예고: 대부분(70%) 알아채고 원·길 밖으로 빠진다
   for (const w of G.warns) {
     if (w.seen == null) w.seen = Math.random() < 0.7;
@@ -1756,7 +1840,7 @@ function updatePlay(dt) {
 
   // 해병
   const mv = moveVec(), stim = p.stimT > 0, sp = p.speed * (stim ? 1.35 : 1);
-  p.x += mv.x * sp * dt; p.y += mv.y * sp * dt;
+  p.x += mv.x * sp * dt; p.y += mv.y * sp * dt; arenaClamp(p, 10);
   p.moving = mv.x * mv.x + mv.y * mv.y > 0.03;
   if (p.moving) p.walk += dt * (stim ? 21 : 16); else p.idle += dt * 3;
   if (stim) { p.stimT -= dt; if (Math.random() < dt * 16 && g.parts.length < 240) g.parts.push({ x: p.x + rand(-8, 8), y: p.y - rand(4, 30), vx: rand(-14, 14), vy: rand(-50, -25), g: 0, life: 0.45, max: 0.45, size: rand(2.5, 4.5), col: 'rgba(255,120,100,.8)' }); }
@@ -1790,7 +1874,7 @@ function updateSquad(dt, stim) {
   const p = G.p; let lead = p;
   for (const m of G.squad) {
     const dx = lead.x - m.x, dy = lead.y - m.y, d = Math.hypot(dx, dy) || 1; m.moving = false;
-    if (d > 34) { const sp = Math.min((d - 34) * 9, p.speed * 1.8); m.x += dx / d * sp * dt; m.y += dy / d * sp * dt; m.moving = sp > 14; }
+    if (d > 34) { const sp = Math.min((d - 34) * 9, p.speed * 1.8); m.x += dx / d * sp * dt; m.y += dy / d * sp * dt; m.moving = sp > 14; arenaClamp(m, 10); }
     if (m.moving) m.walk += dt * 16; else m.idle += dt * 3;
     m.fire = Math.max(0, m.fire - dt * 9); m.fireT -= dt * (stim ? p.stimPow : 1); m.dir = dirStep(m.dir, m.aim);
     const t = nearestEnemy(m.x, m.y, RANGE);
@@ -1944,6 +2028,10 @@ function bossAI(e, dt, ux, uy) {
     } else { const n = 4 + Math.floor(G.stage / 2); for (let i = 0; i < n; i++) { const a = i * TAU / n; const m = makeEnemy('runner', e.x + Math.cos(a) * 44, e.y + Math.sin(a) * 44); burst(m.x, m.y - 6, '#fff', 4, 80); } }
   }
 }
+function updateArena(dt) {
+  const a = G.arena; if (!a) return;
+  a.t += dt; if (a.out) { a.out += dt; if (a.out > 0.5) G.arena = null; }
+}
 function updateWarns(dt) {
   const ws = G.warns, p = G.p;
   for (let i = ws.length - 1; i >= 0; i--) {
@@ -2012,6 +2100,7 @@ function updateEnemies(dt) {
     e.face = dx >= 0 ? 1 : -1;
     if (e.type !== 'bomber' && d < e.r + 10) hurtPlayer(e.dmg);
     if (d > 720 && !e.boss) { const q = spawnPos(); e.x = q.x; e.y = q.y; }   // 너무 멀어진 적은 화면 근처로 재배치
+    if (arenaClamp(e, e.r * 0.6) && e.boss && e.mode === 'charge') e.mode = null;   // 돌진하던 보스는 울타리에 막혀 멈춘다
   }
   // 서로 겹치지 않게 밀어내기
   for (let i = 0; i < es.length; i++) {
@@ -2064,6 +2153,7 @@ function updateFx(dt) {
   if (g.banner) { g.banner.t += dt; if (g.banner.t >= g.banner.dur) g.banner = null; }
   if (g.bark) { g.bark.t += dt; if (g.bark.t >= g.bark.dur) g.bark = null; }
   g.shake = Math.max(0, g.shake - dt * 28); g.flash = Math.max(0, g.flash - dt);
+  updateArena(dt);
 }
 function stepRun(dt) {
   const g = G;
@@ -2093,6 +2183,7 @@ function render() {
   for (const s of g.shells) { const k = clamp(s.t / s.delay, 0, 1); c.strokeStyle = `rgba(255,70,60,${0.5 + 0.4 * Math.sin(T * 30)})`; c.lineWidth = 2; c.setLineDash([6, 5]); ell(c, s.x, s.y, s.r * (1.15 - k * 0.15), s.r * 0.5 * (1.15 - k * 0.15)); c.stroke(); c.setLineDash([]); c.fillStyle = 'rgba(255,70,60,.16)'; ell(c, s.x, s.y, s.r * k, s.r * 0.5 * k); c.fill(); }
   for (const m of g.mines) drawMine(c, m, T);
   drawWarns(c, T, false);
+  drawArena(c, T, cx, cy);
   for (const q of g.gems) if (q.x > cx - 10 && q.x < cx + VW + 10 && q.y > cy - 10 && q.y < cy + VH + 20) drawGem(c, q, T);
   for (const q of g.picks) drawPick(c, q, T);
   for (const b of g.bombers) shadow(c, b.x, b.y, 44, 0.2);
