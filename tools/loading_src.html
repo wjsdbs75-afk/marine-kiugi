@@ -27,7 +27,9 @@ p, h1 { margin: 0; }
 .logo { font-size: 1em; white-space: nowrap; margin-top: .1em; display: flex; flex-direction: column; align-items: center; font-family: var(--font-display); font-weight: 400; line-height: 1; transform: rotate(-3deg); }
 .logo .l1 { font-size: 4.4em; color: var(--hazard); }
 .logo .l2 { font-size: 3.5em; color: var(--fg); margin-left: .9em; }
-.tagline { align-self: center; font-family: var(--font-display); font-weight: 400; font-size: .95em; background: var(--ink); color: var(--hazard); padding: .22em .9em; border-radius: .3em; letter-spacing: .04em; }
+.logo.v2 { align-items: flex-start; }
+.logo.v2 .l2 { margin-left: calc(4.4em * 1.12 / 3.5); margin-top: .1em; }
+.logo.v2 .l3 { align-self: flex-end; font-size: 1.55em; color: var(--hazard); margin-top: .15em; letter-spacing: .04em; }
 #boot { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: calc(2.2em + var(--st)) 1.4em calc(1.6em + var(--sb));
   background: radial-gradient(ellipse at 50% 38%, #2a3b63 0%, #141d33 55%, #070a14 100%); }
 #boot::before, #boot::after { content: ''; position: absolute; left: 0; right: 0; height: .55em; background: repeating-linear-gradient(135deg, var(--hazard) 0 .8em, var(--ink) .8em 1.6em); }
@@ -58,8 +60,7 @@ p, h1 { margin: 0; }
     <div id="boot">
       <div class="boot-mid">
         <div class="boot-helm"></div>
-        <h1 class="logo"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span></h1>
-        <p class="tagline">강화복 해병 서바이벌</p>
+        <h1 class="logo v2"><span class="l1 outline">마린</span><span class="l2 outline">키우기</span><span class="l3 outline">서바이벌</span></h1>
       </div>
       <div class="boot-low">
         <p class="boot-txt outline" id="txt">보급품 확인 중</p>
