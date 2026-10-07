@@ -138,6 +138,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .gtile.fresh { box-shadow: 0 0 0 .14em rgba(255, 255, 255, .85); }
 .gtile:focus-visible, .tab:focus-visible { outline: .16em solid #fff; outline-offset: .08em; }
 .inv { flex: 1; min-height: 3.8em; overflow-y: auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: .45em; align-content: start; justify-items: center; padding: .2em; -webkit-overflow-scrolling: touch; }
+#pageGear > * { flex-shrink: 0; }          /* 장비 화면: 화면이 짧으면 보관함만 줄어들고 아래 버튼은 잘리지 않게 */
+#pageGear > .inv { flex: 1 1 0; flex-shrink: 1; }
 .inv:empty::after { content: attr(data-empty); grid-column: 1 / -1; color: var(--fg-dim); font-size: .78em; text-align: center; padding: 1em .5em; }
 .gear-detail { display: flex; flex-direction: column; gap: .45em; background: var(--steel-2); border-radius: .5em; padding: .5em .6em; }
 .gd-info { display: flex; flex-direction: column; }
@@ -151,8 +153,9 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .bulk-head { display: flex; align-items: baseline; gap: .5em; }
 .bulk-head b { font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--danger); white-space: nowrap; }
 .bulk-head span { font-size: .78em; color: var(--fg-dim); }
-.bulk-chips { display: flex; flex-wrap: wrap; gap: .35em; }
-.bulk-chips button { font: inherit; font-family: var(--font-display); font-weight: 400; font-size: .8em; padding: .25em .7em; color: var(--rc, var(--fg)); background: var(--steel); border: .13em solid var(--rc, var(--ink)); border-radius: 1em; touch-action: manipulation; }
+.bulk-chips { display: flex; flex-wrap: nowrap; gap: .3em; overflow-x: auto; scrollbar-width: none; }
+.bulk-chips::-webkit-scrollbar { display: none; }
+.bulk-chips button { flex: none; font: inherit; font-family: var(--font-display); font-weight: 400; font-size: .74em; padding: .25em .55em; color: var(--rc, var(--fg)); background: var(--steel); border: .13em solid var(--rc, var(--ink)); border-radius: 1em; touch-action: manipulation; }
 .bulk-chips button.on { color: var(--ink); background: var(--rc, var(--fg)); }
 .bulk-chips button:disabled { opacity: .35; }
 #pageGear.bulk .gtile { opacity: .55; }
@@ -797,7 +800,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.73', VERSION_DATE = '2026.10.07', VERSION_NOTE = '테스트 기능: 상점·강화 탭을 번갈아 10번 누르면 스테이지 바로 가기';   // 게시할 때마다 올린다
+const VERSION = 'v0.74', VERSION_DATE = '2026.10.07', VERSION_NOTE = 'PC 화면을 폰 비율로 맞춤 · 장비 화면 아래 버튼이 잘리지 않게';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1118,6 +1121,7 @@ function loadSave() {
   if (!save.meta || typeof save.meta !== 'object') save.meta = {};
   if (!save.gemFirst || typeof save.gemFirst !== 'object') save.gemFirst = {};
   if (!Array.isArray(save.inv)) save.inv = [];
+  save.inv = save.inv.filter((it, i, a) => it && a.findIndex(x => x && x.id === it.id) === i);     // 작전 보고 장비가 두 번 들어갔던 저장 정리 (v0.74)
   if (!save.dex || typeof save.dex !== 'object') { save.dex = { k: {}, c: {}, b: {} }; for (let s = 1; s <= (save.best | 0); s++) save.dex.b[s] = 1; }   // 이미 깬 스테이지의 보스는 잡은 것으로
   for (const f of ['k', 'c', 'b']) if (!save.dex[f] || typeof save.dex[f] !== 'object') save.dex[f] = {};
   if (!Array.isArray(save.eq) || save.eq.length !== SLOTS.length) save.eq = [0, 0, 0, 0, 0, 0];
@@ -1766,7 +1770,10 @@ const safeProbe = document.getElementById('safeProbe');
 function resize() {
   const vw = wrapEl.clientWidth || window.innerWidth, vh = wrapEl.clientHeight || window.innerHeight;
   let w = vw, h = vh;
-  if (h / w < 1.6) w = Math.min(vw, h / 1.78);   // 가로가 넓으면 폰 비율 기둥으로
+  // 화면 비율: 폰은 가로가 아주 넓을 때만 16:9 기둥으로, PC(마우스)는 요즘 폰(약 9:19)과 같은 비율 기둥으로 맞춘다
+  const desk = !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if (desk) { if (h / w < 2.05) w = Math.min(vw, h / 2.05); }
+  else if (h / w < 1.6) w = Math.min(vw, h / 1.78);
   if (h / w > 2.4) h = w * 2.4;
   SCALE = w / W; H = h / SCALE; VW = W / ZOOM; VH = H / ZOOM;
   DPR = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -2899,6 +2906,7 @@ function fmtDur(m) { m = Math.floor(m); return m >= 60 ? `${Math.floor(m / 60)}�
 function makeIdleReport() {
   const m = idleMinutes(), st = clamp(save.best || 1, 1, STAGES.length), room = Math.max(0, INV_CAP - save.inv.length);
   const gear = []; for (let i = 0, n = Math.min(room, Math.floor(m / IDLE_GEAR_MIN)); i < n; i++) gear.push(makeGear(save.best + 1));
+  for (const it of gear) save.inv.splice(save.inv.indexOf(it), 1);      // makeGear 는 바로 보관함에 넣으므로, 받기 전까지는 빼 둔다 (예전에는 받을 때 한 번 더 들어가 두 개씩 되었다)
   const kills = Math.round(m * (8 + 2 * save.best) * (0.92 + Math.random() * 0.16));
   return { m, st, coins: idleReward(), gems: Math.floor(m / 60 * IDLE_GEMS_PER_H), gear, kills, elites: Math.floor(m / 40), hurt: Math.floor(m / 25), full: room < Math.floor(m / IDLE_GEAR_MIN) };
 }
