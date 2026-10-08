@@ -181,6 +181,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
    일반 탭 높이 = 아이콘 3.3em·글자 1줄·여백 (탭 글자 크기 .8em 기준) ≈ 3.95em */
 #tabs::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(3.6em + .45em + var(--sb)); background: var(--ink); z-index: 0; }
 #tabs > .tab { z-index: 1; }
+#tabs::before { background: linear-gradient(#3a4664, #1b2338 40%, #10172a) !important; border-top: .15em solid #55658c; box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .12); }
+#tabs > .tab:not(.main) { background: linear-gradient(#2a3756, #172036); border-color: var(--ink); box-shadow: inset 0 .1em 0 rgba(255, 255, 255, .14), 0 .14em 0 #000; color: #eaf0ff; }
 #lobby:has(#pageHome[hidden]) #tabs::before { top: -.65em; height: auto; }   /* 다른 탭은 위 칸과 이어지게 전체를 칠한다 */
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; padding: .1em 0 .22em; background: var(--steel); color: var(--fg-dim); border: .12em solid #000; border-radius: .5em; font-family: var(--font-display); font-weight: 400; font-size: .8em; touch-action: manipulation; }
 .tab { transition: transform .13s ease-out, background .13s; position: relative; }
@@ -525,6 +527,34 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 #toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--ink); color: var(--hazard); font-family: var(--font-display); font-weight: 400; padding: .5em 1.1em; border-radius: .4em; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .25s; white-space: nowrap; }
 #toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .btn, .card, #hint, #toast, .tab, .tab canvas { transition: none; } }
+/* ---------- 로비 v0.84: 가운데 정렬 로고 · 리본 · 그림 카드 · 금속 틀 출격 버튼 · 금속 하단 탭 ---------- */
+#pageHome > .logo.v2 { align-self: center; margin: .1em 0 0; transform: none; align-items: center; }
+#pageHome > .logo.v2 .l1 { font-size: 4.5em; letter-spacing: .02em; color: #ffc928; text-shadow: -.06em -.06em 0 var(--ink), .06em -.06em 0 var(--ink), -.06em .06em 0 var(--ink), .06em .06em 0 var(--ink), 0 .14em 0 var(--ink), .05em .16em 0 var(--ink), -.05em .16em 0 var(--ink), 0 .22em .12em rgba(0, 0, 0, .35); }
+#pageHome > .logo.v2 .l2 { font-size: 3.7em; margin: -.02em 0 0; color: #fff; text-shadow: -.06em -.06em 0 var(--ink), .06em -.06em 0 var(--ink), -.06em .06em 0 var(--ink), .06em .06em 0 var(--ink), 0 .14em 0 var(--ink), .05em .16em 0 var(--ink), -.05em .16em 0 var(--ink), 0 .22em .12em rgba(0, 0, 0, .35); }
+#pageHome > .logo.v2 .l3 { align-self: center; position: relative; margin-top: .25em; padding: .16em 1em .2em; font-size: 1.3em; color: var(--hazard); letter-spacing: .06em; background: linear-gradient(#26324f, #121a2e); border: .12em solid var(--ink); border-radius: .3em; box-shadow: 0 .15em 0 #000, inset 0 .08em 0 rgba(255, 255, 255, .15); }
+#pageHome > .logo.v2 .l3::before, #pageHome > .logo.v2 .l3::after { content: ''; position: absolute; top: 50%; width: 1.5em; height: .55em; margin-top: -.27em; background: repeating-linear-gradient(-60deg, var(--hazard) 0 .16em, transparent .16em .34em); }
+#pageHome > .logo.v2 .l3::before { left: -1.8em; } #pageHome > .logo.v2 .l3::after { right: -1.8em; transform: scaleX(-1); }
+#btnIdle { background: linear-gradient(#fff8e2, #efdcab); color: var(--ink); border: .14em solid var(--ink); box-shadow: 0 .2em 0 var(--ink), inset 0 .1em 0 #fff; }
+.stage-sel .btn.sq { background: linear-gradient(#26324f, #141c30); color: #fff; border: .14em solid var(--ink); box-shadow: 0 .2em 0 var(--ink), inset 0 .1em 0 rgba(255, 255, 255, .15); }
+.stage-card { overflow: hidden; border: .17em solid #3aa0ff !important; box-shadow: 0 0 .7em rgba(70, 170, 255, .55), inset 0 0 0 .1em var(--ink) !important; background: #0f1626; padding-left: 1em; padding-right: 3.8em; min-height: 5.2em; justify-content: center; }
+#selBg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.stage-card::after { content: ''; position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgba(10, 15, 28, .78), rgba(10, 15, 28, .5) 55%, rgba(10, 15, 28, .2) 75%, rgba(10, 15, 28, .45)), linear-gradient(rgba(255, 255, 255, .08), rgba(0, 0, 0, .25)); pointer-events: none; }
+.stage-card > small, .stage-card > b, .stage-card > span { position: relative; z-index: 2; text-shadow: 0 .08em 0 var(--ink), 0 0 .3em rgba(0, 0, 0, .7); }
+.stage-card > span { color: #dfe7ff; }
+#selBoss { left: auto !important; right: .1em; width: 4.4em; height: 4.4em; margin-top: -2.2em; z-index: 1; filter: brightness(.12) sepia(1) hue-rotate(185deg) saturate(3) opacity(.85) drop-shadow(0 0 .2em rgba(80, 170, 255, .6)); }
+#selBoss.locked { filter: brightness(0) opacity(.6); }
+.ch-dots { display: flex; justify-content: center; gap: .45em; margin: -.1em 0 .1em; }
+.ch-dots i { width: .5em; height: .5em; border-radius: 50%; background: rgba(10, 15, 28, .55); border: .1em solid rgba(234, 240, 255, .35); }
+.ch-dots i.on { background: #5fd8ff; border-color: #fff; box-shadow: 0 0 .35em #5fd8ff; }
+.go-frame { position: relative; padding: .5em .55em 1.15em; margin: 0 -.35em; background: linear-gradient(#3a4664, #1b2338 60%, #131a2c); border: .15em solid var(--ink); border-radius: .9em; box-shadow: 0 .22em 0 #000, inset 0 .12em 0 rgba(255, 255, 255, .18); }
+.go-frame::before, .go-frame::after { content: ''; position: absolute; top: .35em; width: 1.3em; height: .38em; background: repeating-linear-gradient(-60deg, var(--hazard) 0 .14em, var(--ink) .14em .28em); border-radius: .1em; }
+.go-frame::before { left: .9em; } .go-frame::after { right: .9em; }
+.go-frame #btnGo { width: 100%; background: linear-gradient(#ffe36a 0%, #ffc21f 48%, #f2a414 52%, #f6b52a 100%); border: .14em solid var(--ink); border-radius: .55em; box-shadow: 0 .2em 0 #6b4a00, inset 0 .12em 0 rgba(255, 255, 255, .7), inset 0 -.12em 0 rgba(150, 90, 0, .45); }
+.go-frame #btnGo:active { transform: translateY(.12em); box-shadow: 0 .08em 0 #6b4a00, inset 0 .12em 0 rgba(255, 255, 255, .7); }
+.go-frame .go-cost { font-size: .5em; padding: .25em .7em .25em .5em; border: .1em solid rgba(255, 255, 255, .25); }
+.go-frame #energyNote { position: absolute; left: 50%; bottom: -.75em; transform: translateX(-50%); min-height: 0; margin: 0; padding: .2em 1.2em; white-space: nowrap; background: linear-gradient(#26324f, #121a2e); border: .12em solid var(--ink); border-radius: .4em; box-shadow: 0 .12em 0 #000; }
+.go-frame #energyNote:empty { display: none; }
+#game.short #pageHome > .logo.v2 { font-size: .78em; }
 </style>
 
 <div id="wrap">
@@ -555,11 +585,14 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
         <button id="btnIdle" class="btn gold sm idle-btn" type="button">작전 보고 <b id="idleInfo">+0</b></button>
         <div class="stage-sel">
           <button id="btnPrev" class="btn sq" type="button" aria-label="이전 스테이지"><svg viewBox="0 0 24 24"><path d="M16 4 7 12l9 8z" fill="currentColor"/></svg></button>
-          <div class="panel stage-card"><canvas id="selBoss" width="120" height="120" aria-hidden="true"></canvas><small id="selNo">STAGE 1</small><b id="selName">새싹 평원</b><span id="selInfo"></span></div>
+          <div class="panel stage-card"><canvas id="selBg" width="520" height="200" aria-hidden="true"></canvas><canvas id="selBoss" width="120" height="120" aria-hidden="true"></canvas><small id="selNo">STAGE 1</small><b id="selName">새싹 평원</b><span id="selInfo"></span></div>
           <button id="btnNext" class="btn sq" type="button" aria-label="다음 스테이지"><svg viewBox="0 0 24 24"><path d="m8 4 9 8-9 8z" fill="currentColor"/></svg></button>
         </div>
-        <button id="btnGo" class="btn gold big" type="button"><span id="goLabel">출격!</span><small class="go-cost"><i class="bolt" aria-hidden="true"></i>5</small></button>
-        <p class="note outline" id="energyNote"></p>
+        <div class="ch-dots" id="chDots" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="go-frame">
+          <button id="btnGo" class="btn gold big" type="button"><span id="goLabel">출격!</span><small class="go-cost"><i class="bolt" aria-hidden="true"></i>5</small></button>
+          <p class="note outline" id="energyNote"></p>
+        </div>
       </div>
 
       <div id="pageGear" class="page pane" hidden>
@@ -816,7 +849,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.83', VERSION_DATE = '2026.10.08', VERSION_NOTE = '진급 MAX 일 때 보급 상자는 코인·회복으로 · 보스 피해 약 2배 (격노 때 더)';   // 게시할 때마다 올린다
+const VERSION = 'v0.84', VERSION_DATE = '2026.10.08', VERSION_NOTE = '로비 새 디자인 (가운데 로고·리본, 그림 스테이지 카드, 금속 틀 출격 버튼·하단 탭)';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1818,6 +1851,8 @@ function resize() {
   gameEl.style.setProperty('--st', Math.max(0, (ps ? parseFloat(ps.paddingTop) || 0 : 0) - gap) + 'px');
   gameEl.style.setProperty('--sb', Math.max(0, (ps ? parseFloat(ps.paddingBottom) || 0 : 0) - gap) + 'px');
   cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  gameEl.classList.toggle('short', h / w < 1.95);      // 세로가 짧은 화면(16:9 폰 등): 로비 로고를 조금 작게
+  requestAnimationFrame(measureLobby);
 }
 
 // ---------- 전투 시작
@@ -2949,18 +2984,30 @@ function render() {
     c.globalAlpha = 0.85; ell(c, input.cx, input.cy, 20, 20); c.fillStyle = '#fffdf5'; c.fill(); c.stroke(); c.globalAlpha = 1;
   }
 }
+// 로비 장면(수송선·해병)이 로고 아래와 스테이지 카드 위 사이에 들어가도록, 그 칸의 위치를 재 둔다 (화면 비율이 달라도 겹치지 않게)
+let lobbyBox = null;
+function measureLobby() {
+  const ph = el('pageHome'), lo = document.querySelector('#pageHome > .logo'), ss = document.querySelector('#pageHome .stage-sel');
+  if (!ph || ph.hidden || !lo || !ss) { lobbyBox = null; return; }
+  const g = el('game').getBoundingClientRect(); lobbyBox = { top: (lo.getBoundingClientRect().bottom - g.top) / SCALE, bot: (ss.getBoundingClientRect().top - g.top) / SCALE };
+}
+const LOBBY_TOP = -150, LOBBY_BOT = 66;     // 장면의 위(수송선 날개)·아래(해병 발) 월드 좌표
 function renderLobby(c) {
-  const st = STAGES[save.sel - 1], z = ZOOM * 1.25, vw = W / z, vh = H / z;
+  const st = STAGES[save.sel - 1], b = lobbyBox, span = LOBBY_BOT - LOBBY_TOP;
+  let z = ZOOM * 1.25, top = null;
+  if (b && b.bot - b.top > 60) { const av = b.bot - b.top; z = Math.min(z, av / span); top = b.top + (av - span * z) * 0.5; }
+  const vw = W / z, vh = H / z;
   c.save(); c.scale(z, z);
-  const cx = Math.sin(T * 0.12) * 4 - vw / 2, cy = -vh * 0.53;
+  const cx = Math.sin(T * 0.12) * 4 - vw / 2, cy = top == null ? -vh * 0.5 : LOBBY_TOP - top / z;
   c.translate(-cx, -cy); drawGround(c, st, cx, cy, vw, vh);
-  const sx = -26;     // 수송선이 화면 왼쪽에 잘리지 않게 (가로 160 이 화면 폭 안에 들어오게)
+  const sx = -4;      // v0.84: 수송선을 가운데로
   shadow(c, sx, -30, 56, 0.24);
   drawShip(c, sx, -30 - 56 - Math.sin(T * 2) * 2.5, { t: T, hatch: 0, thrust: -0.4 });
   const n = squadUnlocked() ? save.sqSlots || 0 : 0;
-  const SQ_POS = [[-54, 40], [66, 40], [-84, 70]];
+  const SQ_POS = [[-50, 32], [70, 32], [-84, 56]];
   for (let i = 0; i < Math.min(n, SQ_POS.length); i++) drawMarine(c, SQ_POS[i][0], SQ_POS[i][1], { dir: 3, idle: T * 3 + i * 2, s: 1.2, v: 'sq' + i });
-  drawMarine(c, 8, 58, { dir: 3, idle: T * 3, s: 1.9 });       // 예전 자세를 좌우로 뒤집어 왼쪽으로 총을 든 채 가운데
+  { const L = decoList(st); for (const [x, y, k, sz] of [[-118, 30, 0, 1.6], [124, 24, 1, 1.5], [-110, -150, 2, 1.3], [118, -140, 0, 1.3]]) { const d = DECO[L[k % L.length]] || DECO.rock; spr(c, d[0], x, y, d[1] * sz); } }   // 양옆 큰 장식
+  drawMarine(c, 14, 44, { dir: 3, idle: T * 3, s: 1.9 });       // 예전 자세를 좌우로 뒤집어 왼쪽으로 총을 든 채 가운데
   c.restore();
 }
 
@@ -3138,6 +3185,7 @@ function refreshLobby() {
   const s = save.sel, st = STAGES[s - 1], locked = s > save.best + 1 && !devUnlock;
   refreshWallet();
   { const hs = el('homeSq'), lb = sqLabel(); hs.hidden = !lb; hs.textContent = lb; }
+  requestAnimationFrame(measureLobby);
   el('btnDex').classList.toggle('new', dexClaimable() > 0);
   setTxt('selNo', 'STAGE ' + s); setTxt('selName', st.name);
   if (ATLAS.ready && cache.selBoss !== s + (ATLAS.ready3 ? 'r' : '')) {     // 스테이지 카드 왼쪽에 그 스테이지 보스 (안 깬 곳은 그림자)
@@ -3145,6 +3193,11 @@ function refreshLobby() {
     g2.clearRect(0, 0, 120, 120); sprC(g2, bn, 60, 62, 112, bv ? { v: bv } : null);
   }
   el('selBoss').classList.toggle('locked', s > save.best);
+  if (ATLAS.ready && cache.selBg !== s + (ATLAS.ready3 ? 'r' : '')) {        // 카드 배경: 그 스테이지의 땅과 장식
+    cache.selBg = s + (ATLAS.ready3 ? 'r' : ''); const cb = el('selBg'), g3 = cb.getContext('2d');
+    g3.save(); g3.fillStyle = st.g1; g3.fillRect(0, 0, 520, 200); g3.scale(1.6, 1.6); drawGround(g3, st, 37 * s, 53 * s, 520 / 1.6, 200 / 1.6); g3.restore();
+  }
+  [...el('chDots').children].forEach((d, i) => d.classList.toggle('on', i === CHAPTER(s) - 1));
   setTxt('selInfo', locked ? '이전 스테이지를 먼저 클리어하세요' : (s <= save.best ? '클리어 완료 · ' : '') + (isBaseStage(s) ? '적 기지 · ' : '') + '보스: ' + st.boss);
   el('btnGo').disabled = locked; setTxt('goLabel', locked ? '잠김' : '출격!');
   el('btnPrev').disabled = s <= 1; el('btnNext').disabled = s >= STAGES.length;
