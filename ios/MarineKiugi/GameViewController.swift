@@ -60,6 +60,8 @@ final class GameViewController: UIViewController, WKNavigationDelegate {
         // 설치된 앱 버전을 페이지에 알려 준다 (게임 설정 화면에 표시)
         let ver = "아이폰 \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"))"
         cfg.userContentController.addUserScript(WKUserScript(source: "window.MKApp={version:\(String(reflecting: ver))};", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        // 맞을 때 가벼운 햅틱: 페이지가 webkit.messageHandlers.mkHaptic.postMessage(세기 0~1) 로 부른다
+        cfg.userContentController.add(HapticHandler(), name: "mkHaptic")
 
         let w = WKWebView(frame: view.bounds, configuration: cfg)
         w.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -360,5 +362,14 @@ private final class Fetcher: NSObject, URLSessionDataDelegate {
         progress(data.count)
         if let error { cont?.resume(throwing: error) } else { cont?.resume(returning: (data, response)) }
         cont = nil
+    }
+}
+
+/// 게임이 보내는 햅틱 요청 (해병이 맞을 때). WKUserContentController 가 강하게 붙잡으므로 화면과 따로 둔다.
+final class HapticHandler: NSObject, WKScriptMessageHandler {
+    private let gen = UIImpactFeedbackGenerator(style: .light)
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        let k = (message.body as? Double) ?? 0.5
+        gen.impactOccurred(intensity: CGFloat(max(0.1, min(1.0, k))))
     }
 }

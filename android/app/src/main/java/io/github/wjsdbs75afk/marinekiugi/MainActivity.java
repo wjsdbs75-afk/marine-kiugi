@@ -8,6 +8,9 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -664,6 +667,25 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public float safeBottom() {
             return safeBottomPx / density();
+        }
+
+        /** 짧은 진동 (게임에서 해병이 맞을 때). ms 는 5~60 으로 자르고, 세기는 약하게. */
+        @JavascriptInterface
+        public void vibrate(int ms) {
+            try {
+                Vibrator v;
+                if (Build.VERSION.SDK_INT >= 31) {
+                    VibratorManager vm = (VibratorManager) getSystemService(VIBRATOR_MANAGER_SERVICE);
+                    v = vm == null ? null : vm.getDefaultVibrator();
+                } else {
+                    v = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+                }
+                if (v == null || !v.hasVibrator()) return;
+                int d = Math.max(5, Math.min(60, ms));
+                int amp = v.hasAmplitudeControl() ? 70 : VibrationEffect.DEFAULT_AMPLITUDE;
+                v.vibrate(VibrationEffect.createOneShot(d, amp));
+            } catch (Exception ignored) {
+            }
         }
     }
 
