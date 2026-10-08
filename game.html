@@ -813,7 +813,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v0.79', VERSION_DATE = '2026.10.07', VERSION_NOTE = '적 기지: 배치·개수 무작위 · 적이 건물에서 나옴 · 다 부수면 보스';   // 게시할 때마다 올린다
+const VERSION = 'v0.80', VERSION_DATE = '2026.10.08', VERSION_NOTE = '진급 경험치: 뒤 레벨일수록 가파르게';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1115,6 +1115,8 @@ function drawRank(c, lv, w, h) {
     row(i - 12, h * 0.6, (x, y) => { c.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? h * 0.15 : h * 0.36; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fillStyle = '#fff2b0'; c.fill(); c.lineWidth = h * 0.07; c.strokeStyle = ink; c.stroke(); });
   }
 }     // 레벨마다 한 계급. Lv.17 에 대장
+// 진급에 필요한 경험치: 뒤 레벨일수록 가파르게 (v0.80). Lv.1→2 12 · 5→6 39 · 10→11 93 · 15→16 169 · 19→20 246
+const xpNeedOf = L => Math.round(8 + 4 * L + 0.45 * L * L);
 const LV_MAX = 20;     // 그 뒤로는 경험치 바가 찰 때마다 보급(체력 회복 + 코인). 장착한 SS 장비 하나마다 +1 (원수)
 const ssEquipped = () => save.eq.filter(id => { const it = id && gearById(id); return it && it.r >= 5; }).length;
 const lvCap = () => LV_MAX + (G ? G.ssN || 0 : ssEquipped());
@@ -1822,7 +1824,7 @@ function newRun(stage) {
     state: 'intro', introT: 0, introFast: false, landed: false,
     p: { x: 0, y: 0, hp: 100, maxHp: 100, dir: 2, aim: Math.PI / 2, walk: 0, idle: 0, moving: false, fire: 0, fireT: 0.3, stimT: 0, stimLock: 0, stimCdT: 0, stimCdMsg: 0, iframe: 0, shieldOn: false, shieldT: 0, shotsL: 0, shotsC: 0, shotSeq: 0, adr: 0, adrT: 0, visible: false, lift: 0, lowBark: 0, dead: false },
     enemies: [], bullets: [], ebullets: [], warns: [], gems: [], picks: [], parts: [], texts: [], fx: [], mines: [], ruins: [], bldBooms: [], base: null, nades: [], shells: [], bombers: [], booms: [], medic: null, squad: [], sqOrder: [], drones: [],
-    up: {}, loot: [], level: 1, xp: 0, xpNeed: 11, pending: 0, reroll: 1, chest: 0, choices: [], autoPickT: 0,
+    up: {}, loot: [], level: 1, xp: 0, xpNeed: xpNeedOf(1), pending: 0, reroll: 1, chest: 0, choices: [], autoPickT: 0,
     spawnAcc: 0, boss: null, bossSpawned: false,
     shake: 0, flash: 0, flashCol: '255,60,60', banner: null, bark: null,
     tGren: 1, tShock: 1.5, tStrike: 2, tMine: 1, autoDir: { x: 0, y: 0 }, endT: 0, result: null,
@@ -2264,7 +2266,7 @@ function useStim() {
 // ---------- 성장
 function addXp(v) {
   G.xp += v * G.p.xpMul;
-  while (G.xp >= G.xpNeed && G.level < lvCap()) { G.xp -= G.xpNeed; G.level++; G.xpNeed = 6 + G.level * 5; G.pending++; }
+  while (G.xp >= G.xpNeed && G.level < lvCap()) { G.xp -= G.xpNeed; G.level++; G.xpNeed = xpNeedOf(G.level); G.pending++; }
   while (G.level >= lvCap() && G.xp >= G.xpNeed) {     // MAX 보급
     const p = G.p, c = Math.round(15 * G.stage * p.coinMul); G.xp -= G.xpNeed;
     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.25); G.coins += c; SFX.coin();
