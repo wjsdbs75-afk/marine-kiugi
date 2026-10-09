@@ -1014,7 +1014,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.01', VERSION_DATE = '2026.10.08', VERSION_NOTE = '하단 탭 칸이 찌그러지지 않게, 출격 버튼과 하단 바가 이어지게';   // 게시할 때마다 올린다
+const VERSION = 'v1.02', VERSION_DATE = '2026.10.09', VERSION_NOTE = '헬스테이지 후반(30라운드 이후) 렉 수정: 바닥에 쌓이던 코인·아이템 정리';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2673,7 +2673,15 @@ function dropGem(x, y, v) {
   if (G.gems.length > 200) { const g = pick(G.gems); g.v += v; if (g.v >= 20) g.tier = 2; else if (g.v >= 5) g.tier = 1; return; }
   G.gems.push({ x: x + rand(-5, 5), y: y + rand(-5, 5), v, tier: v >= 20 ? 2 : v >= 5 ? 1 : 0, seed: rand(10), mag: false, sp: 0 });
 }
-function dropPick(kind, x, y, v) { G.picks.push({ kind, x: x + rand(-8, 8), y: y + rand(-8, 8), v, seed: rand(10), mag: false, sp: 0 }); }
+// 바닥 아이템이 너무 쌓이면(헬스테이지 후반 등) 새 코인은 이미 떨어진 코인에 값을 합치고, 회복 아이템은 더 떨구지 않는다 (계속 늘면 화면이 느려진다)
+const PICK_CAP = 140;
+function dropPick(kind, x, y, v) {
+  if (G.picks.length >= PICK_CAP && kind !== 'chest') {
+    if (kind === 'coin') for (let i = 0; i < 8; i++) { const q = G.picks[Math.floor(Math.random() * G.picks.length)]; if (q.kind === 'coin') { q.v += v; break; } }
+    return;
+  }
+  G.picks.push({ kind, x: x + rand(-8, 8), y: y + rand(-8, 8), v, seed: rand(10), mag: false, sp: 0 });
+}
 function killEnemy(e) {
   if (e.dead) return; e.dead = true; G.kills++; dexKill(e);
   burst(e.x, e.y - e.r, e.c1, e.boss ? 46 : 8, e.boss ? 260 : 120);
@@ -3317,7 +3325,7 @@ function render() {
   drawWarns(c, T, false);
   drawArena(c, T, cx, cy);
   for (const q of g.gems) if (q.x > cx - 10 && q.x < cx + VW + 10 && q.y > cy - 10 && q.y < cy + VH + 20) drawGem(c, q, T);
-  for (const q of g.picks) drawPick(c, q, T);
+  for (const q of g.picks) if (q.x > cx - 30 && q.x < cx + VW + 30 && q.y > cy - 30 && q.y < cy + VH + 30) drawPick(c, q, T);
   for (const b of g.bombers) shadow(c, b.x, b.y, 44, 0.2);
   if (g.ship.show) shadow(c, g.ship.x, -2, clamp(62 - g.ship.alt * 0.1, 18, 56), clamp(0.3 - g.ship.alt * 0.0007, 0.06, 0.26));
 
