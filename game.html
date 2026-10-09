@@ -533,6 +533,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 @media (prefers-reduced-motion: reduce) { #boot.ready .boot-txt { animation: none; } }
 #toast { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: var(--ink); color: var(--hazard); font-family: var(--font-display); font-weight: 400; padding: .5em 1.1em; border-radius: .4em; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .25s; white-space: nowrap; }
 #toast.show { opacity: 1; }
+#btnResNext.short { filter: grayscale(.7) brightness(.85); }
+#btnResNext .go-cost .gem-dot { width: 1em; height: 1em; display: inline-block; background-size: contain; background-repeat: no-repeat; background-position: center; }
 @media (prefers-reduced-motion: reduce) { .btn, .card, #hint, #toast, .tab, .tab canvas { transition: none; } }
 /* ---------- 로비 v0.84: 가운데 정렬 로고 · 리본 · 그림 카드 · 금속 틀 출격 버튼 · 금속 하단 탭 ---------- */
 #pageHome > .logo.v2 { align-self: center; margin: .1em 0 0; transform: none; align-items: center; }
@@ -1122,7 +1124,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.11', VERSION_DATE = '2026.10.09', VERSION_NOTE = '적 기지 진입 예고, 챔피언 몬스터·중간 보스, 무기 진화 6종, 장거리 조준기, 라운드 연장, 피해·치명타·이동 속도 조정';   // 게시할 때마다 올린다
+const VERSION = 'v1.12', VERSION_DATE = '2026.10.09', VERSION_NOTE = '결과 화면에서 에너지가 모자라면 기지로 튕기던 문제 (버튼에 에너지 표시, 보석으로 바로 충전), 적 기지 예고·챔피언·무기 진화';   // 게시할 때마다 올린다
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -3827,6 +3829,27 @@ function setTxt(id, v) { if (cache[id] !== v) { cache[id] = v; el(id).textConten
 function setStyle(id, prop, v) { const k = id + prop; if (cache[k] !== v) { cache[k] = v; el(id).style.setProperty(prop, v); } }
 function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 let toastT = 0;
+// 결과 화면의 '다음 스테이지' 버튼 (v1.12): 드는 에너지를 붙여 보이고, 모자라면 기지로 튕기지 않고 그 자리에서 알린다.
+// 예전에는 에너지가 모자라면 어느 버튼을 눌러도 기지로 돌아가서, 새로 설치해 에너지가 바닥난 사람에게는 버튼이 고장 난 것처럼 보였다.
+const resCost = () => G && G.hell ? HELL_COST : ENERGY_COST;
+const mss = ms => { const t = Math.ceil(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+function resNextUi() {
+  const nx = el('btnResNext'); if (!G || !G.resNext) return;
+  tickEnergy(); const cost = resCost(), short = save.energy < cost, buy = short && save.gems >= ENERGY_REFILL_GEMS, wait = short && !buy ? mss(energyNextMs()) : '';
+  const key = [G.resNext, cost, short, buy, wait].join('|'); if (nx.dataset.k === key) return; nx.dataset.k = key;
+  nx.textContent = ''; nx.classList.toggle('short', short && !buy);
+  const c = mk('small', 'go-cost');
+  if (buy) { nx.append(document.createTextNode('충전하고 출격')); c.append(mk('span', 'gem-dot'), document.createTextNode(String(ENERGY_REFILL_GEMS))); }
+  else if (short) { nx.append(document.createTextNode(`에너지 부족 ${save.energy}/${cost}`)); c.append(mk('i', 'bolt'), document.createTextNode(wait)); }
+  else { nx.append(document.createTextNode(G.resNext)); c.append(mk('i', 'bolt'), document.createTextNode(String(cost))); }
+  nx.append(c);
+}
+// 에너지가 모자라면 보석으로 채운다 (버튼에 '충전하고 …' 와 보석 수가 보일 때만). 채우지 못하면 false
+function resEnergy() {
+  tickEnergy(); const cost = resCost(); if (save.energy >= cost) return true;
+  if (save.gems >= ENERGY_REFILL_GEMS) { save.gems -= ENERGY_REFILL_GEMS; save.energy = Math.min(ENERGY_MAX, save.energy + ENERGY_REFILL); writeSave(); SFX.buy(); toast(`보석 ${ENERGY_REFILL_GEMS}개 → 에너지 +${ENERGY_REFILL}`); return true; }
+  SFX.deny(); toast(`에너지가 부족합니다 (${save.energy}/${cost}) · 다음 충전 ${mss(energyNextMs())}`); if (G) G.autoNextT = 1e9; return false;
+}
 function toast(msg) { const t = el('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1400); }
 function tap(id, fn) { el(id).addEventListener('click', e => { SFX.resume(); fn(e); }); }
 // 전투 중 버튼: 이동하느라 다른 손가락이 화면에 닿아 있으면 휴대폰 브라우저가 click 을 보내지 않으므로 누르는 순간(pointerdown)에 받는다.
@@ -4613,7 +4636,7 @@ function showResult() {
   rows.push(['보유 코인', fmt(save.coins)]);
   statRows(el('resStats'), rows);
   const nx = el('btnResNext');
-  if (clear && last) nx.hidden = true; else { nx.hidden = false; setTxt('btnResNext', clear ? '다음 스테이지' : '재도전'); }
+  if (clear && last) nx.hidden = true; else { nx.hidden = false; g.resNext = clear ? '다음 스테이지' : '재도전'; resNextUi(); }
   g.autoNextT = 6; cache.resAuto = null; setTxt('resAuto', '');
   el('result').hidden = false; el('bossbar').hidden = true;
   if (clear) SFX.clear();
@@ -4673,7 +4696,7 @@ function showHellResult() {
   setTxt('resTitle', H.newBest ? '주간 신기록!' : `HELL ${r}라운드 돌파`); el('resTitle').classList.toggle('bad', !H.newBest && r === 0);
   setTxt('resSub', `${mmss(g.time)} 생존 · 이번 주 ${rank ? rank + '위' : '순위 없음'}`);
   statRows(el('resStats'), [['돌파 라운드', r + '라운드'], ['생존 시간', mmss(g.time)], ['이번 주 최고', h.r ? hellRec(h.r, h.t) : '-'], ['처치', fmt(g.kills)], ['계급', `Lv.${g.level} ${rankOf(g.level)}`], ['획득 코인', '+' + fmt(total)], ['보석', '+' + gems]]);
-  const nx = el('btnResNext'); nx.hidden = false; setTxt('btnResNext', '다시 도전');
+  const nx = el('btnResNext'); nx.hidden = false; g.resNext = '다시 도전'; resNextUi();
   g.autoNextT = 6; cache.resAuto = null; setTxt('resAuto', '');
   el('result').hidden = false; el('bossbar').hidden = true;
   if (H.newBest) SFX.clear();
@@ -4903,7 +4926,7 @@ function bindUi() {
   tap('btnResume', () => { SFX.click(); closePause(); });
   tap('btnQuit', () => { SFX.click(); if (G) { if (G.hell) hellRecord(); save.coins += G.coins; writeSave(); } toLobby(); });      // 헬스테이지는 그만둬도 그때까지의 기록이 남는다
   tap('btnResHome', () => { SFX.click(); if (G && G.result === 'clear') { save.sel = Math.min(STAGES.length, G.stage + 1); writeSave(); } toLobby(); });   // 깼으면 기지에 다음 스테이지가 떠 있게
-  tap('btnResNext', () => { SFX.click(); if (G.hell) { if (!trySortie(hellTier(), true)) toLobby(); return; } const clear = G.result === 'clear', s = clear ? Math.min(STAGES.length, G.stage + 1) : G.stage; save.sel = s; writeSave(); if (!trySortie(s)) toLobby(); });
+  tap('btnResNext', () => { SFX.click(); if (!resEnergy()) return; if (G.hell) { if (!trySortie(hellTier(), true)) toLobby(); return; } const clear = G.result === 'clear', s = clear ? Math.min(STAGES.length, G.stage + 1) : G.stage; save.sel = s; writeSave(); if (!trySortie(s)) toLobby(); });
   press('btnStim', () => useStim());
   press('btnAuto', () => { if (autoLocked()) { SFX.deny(); toast('처음 깨는 스테이지는 직접 조작해야 해요'); return; } save.auto = !save.auto; writeSave(); SFX.click(); if (G) floatText(G.p.x, G.p.y - 56, save.auto ? 'AUTO 켜짐' : 'AUTO 꺼짐', '#ffd24a', 13, 1); });
   press('btnSpeed', () => { simSteps = SPEEDS[(SPEEDS.indexOf(simSteps) + 1) % SPEEDS.length] || 1; save.spd = simSteps; writeSave(); setSpeedBtn(); SFX.click(); });
@@ -4958,7 +4981,10 @@ function frame(now) {
   const raw = Math.min(0.05, (now - lastNow) / 1000 || 0.016); lastNow = now; T += raw;
   if (appState === 'run' && G) {
     { const n = Math.ceil(simSteps), d = n ? raw * simSteps / n : 0; for (let i = 0; i < n && appState === 'run' && G; i++) stepRun(d); }     // 한 번에 raw 보다 길게 넘지 않게 나눠서
-    if (G && G.state === 'result' && save.auto && G.stage <= save.best && !G.hell) {
+    const autoRes = G && G.state === 'result' && save.auto && G.stage <= save.best && !G.hell;
+    if (G && G.state === 'result') { resNextUi(); if (autoRes && save.energy < ENERGY_COST) G.autoNextT = 1e9; }     // AUTO 는 에너지가 모자라면 멈춘다 (보석을 몰래 쓰지 않는다)
+    if (autoRes && G.autoNextT >= 1e8) setTxt('resAuto', '에너지가 부족해 자동 출격을 멈췄습니다');
+    else if (autoRes) {
       G.autoNextT -= raw; const clear = G.result === 'clear', next = clear && G.stage < STAGES.length && G.stage + 1 <= save.best;   // 다음 스테이지도 깬 적 있을 때만 넘어간다
       setTxt('resAuto', `AUTO: ${Math.max(1, Math.ceil(G.autoNextT))}초 뒤 ${next ? '다음 스테이지로' : '다시 출격'}` + (clear && !next && G.stage < STAGES.length ? ' · 새 스테이지는 직접 조작' : ''));
       if (G.autoNextT <= 0) { if (next) el('btnResNext').click(); else { save.sel = G.stage; writeSave(); if (!trySortie(G.stage)) toLobby(); } }
