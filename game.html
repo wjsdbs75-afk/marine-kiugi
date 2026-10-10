@@ -867,6 +867,11 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .offer-btn { position: relative; }
 .offer-btn[hidden] { display: none !important; }
 .pop-ov { z-index: 30; }
+/* 창 닫기 X (v1.29): 틀 오른쪽 위 모서리. 모든 작은 창에 같은 모양으로 */
+.pop-x { position: absolute; top: .25em; right: .25em; z-index: 4; width: 2.2em; height: 2.2em; padding: 0; border: 0; background: var(--pp-xbtn) center / 100% 100% no-repeat; cursor: pointer; filter: drop-shadow(0 .12em 0 rgba(0, 0, 0, .5)); }
+.pop-x:active { transform: scale(.88); }
+.gear-detail { position: relative; }
+.gear-detail > .pop-x { top: -.6em; right: -.4em; width: 1.9em; height: 1.9em; }
 .ad-ov { z-index: 40 !important; }
 .pop-sheet { width: min(21em, 94%); text-align: center; }
 .pop-sheet .deal { text-align: left; margin: .1em 0 .6em; }
@@ -957,7 +962,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
         <div class="reasm-bar" id="reasmBar" title="같은 등급 장비를 3개 분해할 때마다 한 등급 위 장비로 재조립을 시도해요"></div>
         <p class="reasm-note">같은 등급을 3개 분해할 때마다 한 등급 위 장비로 <b>재조립</b>을 시도해요 (실패하면 다음 확률 ↑)</p>
         <div class="inv" id="invGrid" data-empty="장비가 없습니다. 스테이지를 클리어하거나 상점에서 얻을 수 있어요."></div>
-        <div class="gear-detail" id="gearDetail" hidden>
+        <div class="gear-detail" id="gearDetail" hidden><button id="btnGdX" class="pop-x" type="button" aria-label="닫기"></button>
           <div class="gd-info"><b id="gdName"></b><span id="gdStat"></span><span id="gdSub"></span><span id="gdCmp"></span></div>
           <div class="gd-btns">
             <button id="btnGdEquip" class="btn gold sm" type="button">장착</button>
@@ -1156,7 +1161,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 
     <div id="reasmOv" class="overlay" hidden>
       <h2 class="title-pop outline" id="reasmTitle">재조립 성공!</h2>
-      <div class="panel sheet framed reasm-sheet">
+      <div class="panel sheet framed reasm-sheet"><button id="btnReasmX" class="pop-x" type="button" aria-label="닫기"></button>
         <div class="reasm-items" id="reasmItems"></div>
         <p class="reasm-text" id="reasmText"></p>
         <div class="btn-row"><button id="btnReasmOk" class="btn gold" type="button">확인</button></div>
@@ -1187,7 +1192,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
     <div id="idleRep" class="overlay" hidden>
       <div class="panel sheet report framed" role="dialog" aria-labelledby="repTitle">
         <h2 class="frame-title">부재 중 작전 보고</h2>
-        <span class="rep-stamp" aria-hidden="true">임무 완료</span>
+        <span class="rep-stamp" aria-hidden="true">임무 완료</span><button id="btnRepX" class="pop-x" type="button" aria-label="닫기"></button>
         <div class="rep-head">
           <div class="rep-port"><canvas id="repCv" width="96" height="96" aria-hidden="true"></canvas></div>
           <div><span class="rep-stage" id="repStage">STAGE 1</span><h2 id="repTitle">일대 방어</h2></div>
@@ -1269,7 +1274,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.28', VERSION_DATE = '2026.10.10', VERSION_NOTE = '특가 보급(신병 키트·챕터 돌파·광고 제거·보급 계약), 광고 보상(출격 전 분대원·부활·코인 2배·에너지·무료 보석)';
+const VERSION = 'v1.29', VERSION_DATE = '2026.10.10', VERSION_NOTE = '작은 창마다 오른쪽 위 X 닫기 버튼 (특가·보상·에너지·분대 요청·재조립·부재 중 보고·장비 상세)';
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -4636,10 +4641,11 @@ function rewardAd(done) { if (save.noAds) { SFX.buy(); done(); return; } showAd(
 const adTxt = txt => { const f = document.createDocumentFragment(); if (!save.noAds) f.append(uico('ad', 'inline')); f.append(document.createTextNode(txt)); return f; };
 // 팝업: 틀 있는 작은 창. 뒤로 가기는 맨 위 창을 닫는다
 const pops = [];
-function openPop(title, cls) {
+function openPop(title, cls, noX) {
   const ov = mk('div', 'overlay pop-ov' + (cls ? ' ' + cls : '')), sh = mk('div', 'panel sheet framed pop-sheet'); sh.setAttribute('role', 'dialog');
   sh.append(mk('h2', 'frame-title', title)); ov.append(sh); el('game').append(ov);
   const P = { ov, sh, close() { ov.remove(); const i = pops.indexOf(P); if (i >= 0) pops.splice(i, 1); if (P.onClose) P.onClose(); } };
+  if (!noX) { const x = mk('button', 'pop-x'); x.type = 'button'; x.setAttribute('aria-label', '닫기'); x.addEventListener('click', () => { SFX.click(); P.close(); }); sh.append(x); }
   pops.push(P); return P;
 }
 const popArt = k => { const a = mk('i', 'pop-art'); a.style.setProperty('--art', `var(--sa-${k})`); return a; };
@@ -4757,7 +4763,7 @@ function energyPop(cost) {
 }
 // 부활: 쓰러지면 한 판에 한 번, 광고를 보고 그 자리에서 일어난다 (헬스테이지는 랭킹이라 없음)
 function openRevive() {
-  const g = G, P = openPop('부활', 'rev-pop'); let t = REVIVE_SEC, hold = false, done = false;
+  const g = G, P = openPop('부활', 'rev-pop', true); let t = REVIVE_SEC, hold = false, done = false;
   const cnt = mk('b', 'rev-count', String(t)), tx = mk('p', 'pop-txt'); tx.append('그 자리에서 ', mk('b', '', '체력 가득'), ' 다시 일어서고', mk('br'), '주변 적을 날려 버린다 (한 판에 한 번)');
   const giveUp = () => { if (done) return; done = true; clearInterval(iv); P.close(); if (G !== g) return; g.state = 'ending'; g.endT = 0.5; g.result = 'over'; SFX.over(); };
   const iv = setInterval(() => { if (hold || done) return; t -= 0.1; cnt.textContent = String(Math.max(0, Math.ceil(t))); if (t <= 0) giveUp(); }, 100);
@@ -5420,6 +5426,9 @@ function bindUi() {
   tap('btnIcoG', () => { SFX.click(); save.icoG = ((save.icoG | 0) + 1) % ICO_ALT.gem.length; writeSave(); applyIcoTest(); refreshWallet(); });
   tap('btnIcoE', () => { SFX.click(); save.icoE = ((save.icoE | 0) + 1) % ICO_ALT.bolt.length; writeSave(); applyIcoTest(); });
   tap('btnReasmOk', () => { SFX.click(); el('reasmOv').hidden = true; refreshGear(); });
+  tap('btnReasmX', () => el('btnReasmOk').click());
+  tap('btnRepX', () => { SFX.click(); if (idleRep) claimIdleReport(false); });
+  tap('btnGdX', () => { SFX.click(); gearSel = 0; refreshGear(); });
   tap('btnGdSell', () => { const it = gearById(gearSel); if (!it || save.eq[it.s] === it.id) return; gearSel = 0; const out = dismantle([it]); refreshGear(); dismantleDone(out, 1); });
   tap('btnAutoEq', () => { for (let i = 0; i < SLOTS.length; i++) { let best = null; for (const it of save.inv) if (it.s === i && (!best || it.r * 100 + it.lv > best.r * 100 + best.lv)) best = it; save.eq[i] = best ? best.id : 0; } writeSave(); SFX.buy(); refreshGear(); });
   tap('btnPull1', () => pull(1)); tap('btnPull10', () => pull(10));
