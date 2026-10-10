@@ -866,6 +866,15 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .offer-btn.new::after { content: ''; position: absolute; right: -.25em; top: -.25em; width: .75em; height: .75em; border-radius: 50%; background: var(--danger); border: .12em solid var(--ink); }
 .offer-btn { position: relative; }
 .offer-btn[hidden] { display: none !important; }
+/* 상점·장비·분대·강화 탭 (v1.32): 전투 화면 위에 뜬 창처럼 보이지 않게 화면을 끝까지 덮는다 */
+#lobby:has(#pageHome[hidden]) { background: linear-gradient(#1b2644, #0e1528 70%); }
+#lobby:has(#pageHome[hidden]) > .page.pane { margin: 0 -.8em; border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0; box-shadow: none; }
+/* 장비 화면 정리 (v1.32): 능력치·장비 효과는 전투력 줄을 눌러야 펼친다. 재조립 진행은 일괄 분해 때만 */
+.pow-sum .pow-total { position: relative; cursor: pointer; }
+.pow-sum .pow-more { position: absolute; right: .9em; top: 50%; transform: translateY(-50%); font-size: .62em; font-weight: 800; color: #9be7ff; }
+.pow-sum:not(.open) > div:not(.pow-total) { display: none !important; }
+.gear-sum[hidden] { display: none; }
+#pageGear:not(.bulk) .reasm-bar, #pageGear:not(.bulk) .reasm-note { display: none; }
 .pop-ov { z-index: 30; }
 /* 창 닫기 X (v1.29): 틀 오른쪽 위 모서리. 모든 작은 창에 같은 모양으로 */
 .pop-x { position: absolute; top: .25em; right: .25em; z-index: 4; width: 2.2em; height: 2.2em; padding: 0; border: 0; background: var(--pp-xbtn) center / 100% 100% no-repeat; cursor: pointer; filter: drop-shadow(0 .12em 0 rgba(0, 0, 0, .5)); }
@@ -1274,7 +1283,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.31', VERSION_DATE = '2026.10.10', VERSION_NOTE = '헬 라운드 15초, 보스 격파 배너, 적 투사체 새 그림(산성 덩어리·플라스마·에너지 구슬·불덩이)';
+const VERSION = 'v1.32', VERSION_DATE = '2026.10.10', VERSION_NOTE = '드론 강화(폭발 주변 피해·레벨마다 연사 증가·편대 2배 연사), 장비 화면 간단하게, 상점·장비 탭이 화면을 다 덮게';
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1456,7 +1465,7 @@ const UPS = [
   { id: 'speed',   name: '기동 군화',     max: 5, w: 6,  pr: 3, desc: '이동 속도 +10%' },
   { id: 'magnet',  name: '자석 장치',     max: 4, w: 5,  pr: 3, desc: '아이템 획득 범위 +30%' },
   { id: 'grenade', name: '수류탄',        max: 5, w: 8,  pr: 7, desc: '주기적으로 수류탄 투척', skill: true },
-  { id: 'drone',   name: '전투 드론',     max: 5, w: 7,  pr: 6, desc: l => l >= 3 ? `유도 미사일 드론 ${Math.min(3, l)}대 · 맞은 자리 폭발 · 몇 초마다 일제 사격` : `주위를 돌며 유도 미사일을 쏘는 드론 ${l}대`, skill: true },
+  { id: 'drone',   name: '전투 드론',     max: 5, w: 7,  pr: 6, desc: l => (l >= 3 ? `유도 미사일 드론 ${Math.min(3, l)}대 · 몇 초마다 일제 사격` : `주위를 돌며 유도 미사일을 쏘는 드론 ${l}대`) + ` · 폭발 주변 피해 · 사격 간격 ${(0.95 - 0.1 * l).toFixed(2)}초`, skill: true },
   { id: 'shock',   name: '전격 코일',     max: 5, w: 7,  pr: 7, desc: '적 사이를 튀는 전기 사슬', skill: true },
   { id: 'strike',  name: '포격 지원',     max: 5, w: 6,  pr: 6, desc: '하늘에서 포탄이 떨어진다', skill: true },
   { id: 'mine',    name: '지뢰 살포',     max: 5, w: 6,  pr: 3, desc: '지나간 자리에 지뢰 설치 (가까이 오는 적에게 반응해 터진다)', skill: true },
@@ -1496,7 +1505,7 @@ const upDesc = (u, lv) => typeof u.desc === 'function' ? u.desc(Math.min(u.max, 
 const EVOS = [
   { id: 'ev_cluster',  base: 'grenade',  mat: 'boomkill', name: '집속탄',          desc: '수류탄이 터지면 작은 폭탄 4개로 흩어진다 · 투척 간격 -20%' },
   { id: 'ev_claymore', base: 'mine',     mat: 'knock',    name: '블랙홀 지뢰',     desc: '적이 몰린 곳에 지뢰를 던져 블랙홀을 연다 · 주변 적을 빨아들인 뒤 한꺼번에 붕괴 폭발' },   // v1.30: 클레이모어 지대를 바꿨다 (아이디는 그대로)
-  { id: 'ev_swarm',    base: 'drone',    mat: 'rate',     name: '드론 편대',       desc: '드론 5대 · 미사일 더 빠르게·더 세게·더 크게 · 일제 사격이 더 자주, 더 많이' },
+  { id: 'ev_swarm',    base: 'drone',    mat: 'rate',     name: '드론 편대',       desc: '드론 5대 · 2배 빠르게 연사 · 미사일 더 세게·더 크게 · 일제 사격 3.2초마다 5발씩' },
   { id: 'ev_rail',     base: 'charge',   mat: 'pierce',   name: '레일건',          desc: '사격 3회마다 화면 끝까지 꿰뚫는 레일건 (피해 1.5배)' },
   { id: 'ev_storm',    base: 'shock',    mat: 'cryo',     name: '뇌운',            desc: '전기 사슬이 2배로 튀고 맞은 적은 0.5초 기절 · 간격 -40%' },
   { id: 'ev_napalm',   base: 'launcher', mat: 'burn',     name: '네이팜',          desc: '유탄이 터진 자리가 3초간 불바다 · 유탄 4발마다 발사' },
@@ -3528,18 +3537,19 @@ function updateSkills(dt) {
   // 드론 (v1.21 개편): 가는 광선 대신 유도 소형 미사일을 쏘고, 맞은 자리에서 작게 터진다 (범위 피해).
   // Lv.3 부터 몇 초마다 모든 드론이 여러 적에게 '일제 사격'. 진화(드론 편대)는 5대·더 빠르게·일제 사격 더 자주
   if (g.drones.length) {
-    const sw = !!u.ev_swarm, dd = p.dmg * (0.7 + 0.25 * u.drone) * (sw ? 1.5 : 1), br = (26 + 2 * u.drone) * (sw ? 1.25 : 1), R = sw ? 58 : 46;
+    // v1.32 드론 강화: 맞은 적은 전부, 주변(폭발 반경)은 60% 스플래시 · 레벨마다 사격 간격이 크게 준다 (Lv.1 0.85초 → Lv.5 0.45초, 편대는 그 절반)
+    const sw = !!u.ev_swarm, dd = p.dmg * (0.8 + 0.25 * u.drone) * (sw ? 1.5 : 1), br = (38 + 4 * u.drone) * (sw ? 1.25 : 1), R = sw ? 58 : 46;
     for (const d of g.drones) {
       d.a += dt * 1.7; d.x = p.x + Math.cos(d.a + d.off) * R; d.y = p.y + Math.sin(d.a + d.off) * R * 0.65;
       d.fireT -= dt;
-      if (d.fireT <= 0) { const t = nearestEnemy(d.x, d.y, 240); if (t) { d.fireT = (1.0 - 0.08 * u.drone) * (sw ? 0.6 : 1); fireMissile(d, t, dd, br); } else d.fireT = 0.2; }
+      if (d.fireT <= 0) { const t = nearestEnemy(d.x, d.y, 240); if (t) { d.fireT = (0.95 - 0.1 * u.drone) * (sw ? 0.5 : 1); fireMissile(d, t, dd, br); } else d.fireT = 0.2; }
     }
     if (u.drone >= 3 || sw) {
       g.tSalvo -= dt;
       if (g.tSalvo <= 0) {
         const c = inRange(280);
         if (!c.length) g.tSalvo = 0.5; else {
-          g.tSalvo = sw ? 4 : 6.5; const k = sw ? 4 : 3;
+          g.tSalvo = sw ? 3.2 : 6; const k = sw ? 5 : 3;
           g.drones.forEach((d, i) => { for (let j = 0; j < k; j++) setTimeout(() => { if (G === g && g.state === 'play') fireMissile(d, pick(c.filter(e => !e.dead)) || nearestEnemy(d.x, d.y, 280), dd, br); }, (i * 60 + j * 110)); });
           g.bark = { str: '드론 일제 사격!', t: 0, dur: 1.1 };
         }
@@ -3722,7 +3732,7 @@ function updateMissiles(dt) {
 }
 function missileBoom(m) {      // 작은 폭발: 화면 흔들림·큰 소리 없이 (드론 미사일이 많아도 시끄럽지 않게)
   if (G.fx.length < 70) G.fx.push({ k: 'boom', x: m.x, y: m.y - 4, r: m.r, t: 0, dur: 0.26, col: '#7fd8ff' });
-  for (const e of G.enemies) { if (e.dead) continue; const dx = e.x - m.x, dy = e.y - m.y, rr = m.r + e.r; if (dx * dx + dy * dy < rr * rr) damageEnemy(e, m.dmg, Math.random() < G.p.crit, dx, dy, 30); }
+  for (const e of G.enemies) { if (e.dead) continue; const dx = e.x - m.x, dy = e.y - m.y, rr = m.r + e.r; if (dx * dx + dy * dy < rr * rr) damageEnemy(e, e === m.tg ? m.dmg : m.dmg * 0.6, Math.random() < G.p.crit, dx, dy, 30); }     // 맞은 적 100%, 주변 60%
   if (G.parts.length < 220) for (let k = 0; k < 4; k++) G.parts.push({ x: m.x, y: m.y - 6, vx: rand(-90, 90), vy: rand(-90, 30), g: 200, life: 0.3, max: 0.3, size: rand(1.5, 2.5), col: k % 2 ? '#bff4ff' : '#ffd27a' });
   SFX.pop();
 }
@@ -4937,7 +4947,7 @@ function setTab(id) {
 }
 
 // ---------- 장비
-let gearSel = 0;
+let gearSel = 0, gearStatsOpen = false;      // 장비 화면 능력치 칸: 처음엔 접어 둔다 (v1.32)
 function gearTile(it, slotIdx, plain) {
   const b = mk(plain ? 'div' : 'button', 'gtile' + (it ? '' : ' empty')); if (!plain) b.type = 'button';
   const kd = it ? gearKind(it) : SLOTS[slotIdx].kinds[0];
@@ -5032,7 +5042,9 @@ function refreshGear() {
     const ss = ssEquipped();
     for (const [k, v] of [['공격력', fmt(bp.atk)], ['초당 사격', bp.rate.toFixed(1) + '발'], ['체력', fmt(bp.hp)], ['방어력', `${fmt(bp.def)} (-${Math.round(bp.cut * 100)}%)`], ['치명타', Math.round(bp.crit) + '%'], ['방어 관통', Math.round(bp.pen) + '%']]) {
       const d = mk('div'); d.append(mk('small', '', k), mk('b', '', v)); ps.append(d); }
-    { const d = mk('div', 'pow-total'); d.append(mk('small', '', '전투력'), mk('b', '', fmt(powerOf(bp)))); ps.prepend(d); }
+    { const d = mk('div', 'pow-total'); d.append(mk('small', '', '전투력'), mk('b', '', fmt(powerOf(bp))), mk('span', 'pow-more', gearStatsOpen ? '접기 ▲' : '능력치 ▼'));
+      d.addEventListener('click', () => { SFX.click(); gearStatsOpen = !gearStatsOpen; refreshGear(); }); ps.prepend(d); }
+    ps.classList.toggle('open', gearStatsOpen); el('gearSum').hidden = !gearStatsOpen;
     rankChip(ss); }
   const L = el('slotsL'), R = el('slotsR'); L.textContent = ''; R.textContent = '';
   SLOTS.forEach((s, i) => (i < 3 ? L : R).append(gearTile(save.eq[i] ? gearById(save.eq[i]) : null, i)));
