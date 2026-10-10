@@ -1202,7 +1202,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.24', VERSION_DATE = '2026.10.10', VERSION_NOTE = '배속은 x1·x1.2·x1.5 만 (x2 삭제)';
+const VERSION = 'v1.25', VERSION_DATE = '2026.10.10', VERSION_NOTE = '헬스테이지 라운드 30초 → 20초';
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -1267,7 +1267,7 @@ const STAGES = [
 const CHAPTER = s => s <= 10 ? 1 : s <= 20 ? 2 : s <= 30 ? 3 : s <= 40 ? 4 : 5;
 // ---------- 헬스테이지 (v0.91): 끝없이 라운드가 이어지며 매 라운드 일정하게(등차) 어려워진다. 쓰러질 때까지 버틴 라운드·시간으로 주간 랭킹
 // 땅은 '지옥문'(49) 그림을 쓰고, 매 라운드 다른 군단(챕터 1~5 그림)이 차원 균열로 쏟아진다. 5라운드마다 보스 러시(보스 여러 마리)
-const HELL_UNLOCK = 10, HELL_COST = 10, HELL_ROUND = 30, HELL_LOOK = 49;
+const HELL_UNLOCK = 10, HELL_COST = 10, HELL_ROUND = 20, HELL_LOOK = 49;
 const hellHp = r => 2 + 3.5 * (r - 1);                       // 1라운드 약 스테이지 4, 10라운드 약 22, 20라운드 약 28, 40라운드 약 50
 const hellDmg = r => 1 + 0.3 * (r - 1);
 const hellDef = r => Math.min(320, 8 * (r - 1));
@@ -4973,7 +4973,7 @@ function hellBoard(wk) {
   const N = 1500, L = [];
   for (let k = 1; k <= N; k++) {
     const r = Math.max(1, Math.round(46 * Math.pow(1 - Math.log(k) / Math.log(N + 120), 0.8) + 1 + (rnd() - 0.5) * 2.4));
-    const t = r * HELL_ROUND + Math.floor(r / 5) * Math.floor(8 + rnd() * 30) + Math.floor(rnd() * 28);
+    const t = r * HELL_ROUND + Math.floor(r / 5) * Math.floor(8 + rnd() * 30) + Math.floor(rnd() * (HELL_ROUND - 2));
     L.push({ name: HELL_NAMES_A[Math.floor(rnd() * 20)] + ' ' + HELL_NAMES_B[Math.floor(rnd() * 20)] + (rnd() < 0.5 ? Math.floor(rnd() * 99) + 1 : ''), r, t });
   }
   L.sort((a, b) => b.r - a.r || b.t - a.t);
