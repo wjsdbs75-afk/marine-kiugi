@@ -174,17 +174,13 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .pow-sum small { font-size: .62em; color: var(--fg-dim); }
 .pow-sum .pow-total { grid-column: 1 / -1; flex-direction: row !important; justify-content: center; gap: .5em; }
 .pow-sum .pow-total b { font-size: 1.25em; color: var(--hazard); }
-.pow-sum .rank-card { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: .6em; row-gap: .2em; padding: .4em .7em .45em; flex-direction: row;
-  background: linear-gradient(135deg, rgba(255, 194, 31, .16), rgba(5, 8, 18, .45) 60%), var(--steel-2); border: .12em solid rgba(255, 210, 74, .55); box-shadow: inset 0 0 .6em rgba(255, 194, 31, .18); }
-.rank-card.ss { border-color: rgba(255, 79, 109, .75); background: linear-gradient(135deg, rgba(255, 79, 109, .2), rgba(5, 8, 18, .45) 60%), var(--steel-2); box-shadow: inset 0 0 .7em rgba(255, 79, 109, .25), 0 0 .5em rgba(255, 79, 109, .3); }
-.rank-card .rc-ico { grid-row: 1 / 3; width: 5.6em; height: 1.71em; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .5)); }
-.rank-card .rc-mid { display: flex; align-items: baseline; gap: .45em; flex-wrap: wrap; }
-.rank-card .rc-mid small { font-size: .62em; color: var(--fg-dim); flex-basis: 100%; }
-.rank-card .rc-lv { font-size: 1.5em !important; line-height: 1; color: var(--hazard) !important; text-shadow: 0 .08em 0 var(--ink); }
-.rank-card .rc-ss { font-style: normal; font-size: .72em; margin-left: .12em; padding: 0 .3em; border-radius: .3em; color: #fff; background: linear-gradient(#ff7a8f, #e0294b); box-shadow: 0 0 .5em rgba(255, 79, 109, .8); text-shadow: none; animation: ssGlow 1.4s ease-in-out infinite; }
-.rank-card .rc-rank { font-family: var(--font-display); font-size: .82em; color: #fff; }
-.rank-card .rc-next { display: flex; align-items: center; gap: .5em; font-size: .64em; color: #c9d4f2; }
-.rank-card .rc-bar { flex: 1; height: .5em; border-radius: .3em; background: linear-gradient(90deg, var(--hazard) calc(var(--p, 0) * 100%), rgba(255, 255, 255, .12) 0); min-width: 3em; }
+/* 진급 한도 (v1.23): 장비 제목과 자동 장착 사이에 한 줄로. 계급장 + Lv + SS 보너스, 그 밑에 다음 단계 안내 */
+.rank-chip { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: .4em; }
+.rank-chip canvas { height: 1.5em; width: auto; flex: none; }
+.rank-chip > span { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.rank-chip small { font-size: .62em; font-weight: 700; color: #c9d4f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-chip b { font-family: var(--font-display); font-weight: 400; font-size: 1.05em; color: var(--hazard); white-space: nowrap; }
+.rank-chip em { font-style: normal; font-family: var(--font-body); font-weight: 800; font-size: .72em; margin-left: .3em; color: #ff8a9c; }
 .pow-sum b { font-family: var(--font-display); font-weight: 400; font-size: .92em; color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* 일괄 분해: 보관함 칸을 눌러 여러 개 고르거나, 등급 칩으로 한 번에 고른다 */
 .bulk-bar { display: flex; flex-direction: column; gap: .45em; background: var(--steel-2); border: .14em solid var(--danger); border-radius: .5em; padding: .5em .6em; }
@@ -600,7 +596,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .go-frame #btnGo:active { transform: translateY(.05em) scale(.985); }
 .go-frame:has(#btnGo:disabled) { filter: grayscale(.85) brightness(.85); }
 .go-frame #energyNote { bottom: -.55em; z-index: 2; padding: .26em 1.5em .28em; font-size: .72em; background: var(--art-pillN) center / 100% 100% no-repeat !important; border: 0 !important; box-shadow: none !important; }
-.stage-card { border: 0 !important; box-shadow: none !important; background: transparent !important; min-height: 4.8em; padding: .3em 2.7em .35em !important; align-items: center; }
+.stage-card { border: 0 !important; box-shadow: none !important; background: transparent !important; min-height: 4.8em; padding: .6em 2.7em .55em !important; align-items: center; }
 .stage-card > span { font-size: .7em; text-wrap: balance; }
 .ch-dots { position: relative; z-index: 4; margin: -1.05em 0 .2em !important; }
 .ch-dots i { width: .42em !important; height: .42em !important; }
@@ -770,8 +766,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 .dex-all[hidden] { display: none; }
 #joySeg .btn { min-width: 0; padding-left: .55em; padding-right: .55em; }
 .sel-base[hidden] { display: none; }
-.sel-pow { font-style: normal; position: absolute; left: .55em; top: .45em; z-index: 3; font-family: var(--font-display); font-size: .62em; line-height: 1; padding: .22em .55em .18em; border-radius: .4em; color: #fff; background: rgba(10, 15, 28, .82); border: .12em solid; }
-.sel-pow.ok { border-color: #5fe08a; color: #b9ffcf; } .sel-pow.mid { border-color: #ffc21f; color: #ffe27a; } .sel-pow.low { border-color: #ff5340; color: #ffb3a8; }
+.sel-pow { font-style: normal; position: relative; z-index: 3; align-self: center; margin-top: .25em; font-family: var(--font-body); font-weight: 800; font-size: .7em; line-height: 1.2; padding: .18em .75em; border-radius: 1em; color: #fff; background: rgba(5, 8, 18, .85); border: .1em solid; white-space: nowrap; }
+.sel-pow.ok { border-color: #5fe08a; } .sel-pow.mid { border-color: #ffc21f; } .sel-pow.low { border-color: #ff5340; } .sel-pow.ok i { color: #7dff9f; } .sel-pow.mid i { color: #ffd84a; } .sel-pow.low i { color: #ff7a6a; } .sel-pow i { font-style: normal; }
 #pageHome.hell .sel-pow { display: none; }
 .sel-base { font-style: normal; position: absolute; right: .55em; top: .45em; z-index: 3; font-family: var(--font-display); font-size: .7em; letter-spacing: .05em; color: #fff; padding: .18em .6em .12em; border-radius: .4em; background: linear-gradient(#e0432e, #a51f14); border: .12em solid var(--ink); box-shadow: 0 0 .5em rgba(255, 80, 50, .6); pointer-events: none; }
 /* 직업 훈련 (v1.08) */
@@ -891,7 +887,7 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
       </div>
 
       <div id="pageGear" class="page pane" hidden>
-        <div class="pane-head"><h2>장비</h2><button id="btnAutoEq" class="btn sm" type="button">자동 장착</button></div>
+        <div class="pane-head"><h2>장비</h2><div class="rank-chip" id="rankChip"></div><button id="btnAutoEq" class="btn sm" type="button">자동 장착</button></div>
         <div class="doll"><div class="slots" id="slotsL"></div><canvas id="dollCv" width="240" height="240" aria-hidden="true"></canvas><div class="slots" id="slotsR"></div></div>
         <div class="pow-sum" id="powSum"></div>
         <div class="gear-sum" id="gearSum"></div>
@@ -1206,7 +1202,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.22', VERSION_DATE = '2026.10.10', VERSION_NOTE = '권장 전투력, 장비 공격력·체력 상향, 보급 상자도 진급, 진화는 한 판에 하나·안내 짧게, 함대 지원 대사';   // 게시할 때마다 올린다
+const VERSION = 'v1.23', VERSION_DATE = '2026.10.10', VERSION_NOTE = '전투력·권장 표시 잘 보이게, 장비 화면 진급 한도를 제목 줄로 간단하게';
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -4333,7 +4329,7 @@ function refreshLobby() {
   }
   setTxt('selInfo', locked ? '이전 스테이지를 먼저 클리어하세요' : (s <= save.best ? '클리어 완료 · ' : '') + '보스: ' + st.boss);
   { const my = powerOf(), rec = recPower(s), k = my / rec, sp = el('selPow');      // 내 전투력 / 권장 (넉넉 초록, 조금 부족 노랑, 많이 부족 빨강)
-    sp.className = 'sel-pow ' + (k >= 1 ? 'ok' : k >= 0.7 ? 'mid' : 'low'); setTxt('selPow', `전투력 ${fmtK(my)} / 권장 ${fmtK(rec)}`); sp.hidden = false; }
+    sp.className = 'sel-pow ' + (k >= 1 ? 'ok' : k >= 0.7 ? 'mid' : 'low'); sp.textContent = `내 전투력 ${fmtK(my)} · 권장 `; sp.append(mk('i', '', fmtK(rec))); sp.hidden = false; }
   el('btnGo').disabled = locked; setTxt('goLabel', locked ? '잠김' : '출격!');
   el('btnPrev').disabled = s <= 1; el('btnNext').disabled = s >= STAGES.length;
 }
@@ -4675,17 +4671,17 @@ const powerOf = (bp = basePower()) => Math.round(bp.atk * bp.rate * (1 + 1.5 * b
 // 기준값 380: 훈련만 한 세 계정(낮음·중간·높음)을 자동 플레이로 돌려 겨우 깨는 스테이지에 맞췄다 (각각 375·433·343 → 380)
 const recPower = s => Math.round(380 * stageHpMul(s) * (1 + stageDef(s) / 300) * (EASY[s] ? EASY[s][0] : 1));
 const fmtK = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1) + 'K' : fmt(n);
-// 장비 화면의 진급 한도 칸 (v1.19): 가장 중요한 강화라 크게. 계급장 + 훈련으로 연 한도 + SS 장비 보너스(+N, 붉은 빛) + 다음 단계까지 진행
-function rankCard(ss) {
-  const t = trainLv(), base = lvBase(t), cap = base + ss, card = mk('div', 'rank-card' + (ss ? ' ss' : ''));
-  const cv = mk('canvas', 'rc-ico'); cv.width = 170; cv.height = 52; drawRank(cv.getContext('2d'), cap, 170, 52);
-  const mid = mk('span', 'rc-mid'), lvl = mk('b', 'rc-lv', 'Lv.' + base);
-  if (ss) lvl.append(mk('em', 'rc-ss', '+' + ss));
-  mid.append(mk('small', '', '전투 진급 한도'), lvl, mk('span', 'rc-rank', rankOf(cap)));
-  const nx = mk('span', 'rc-next');
-  if (base < LV_MAX) { const left = LV_TRAIN_STEP - t % LV_TRAIN_STEP, bar = mk('i', 'rc-bar'); bar.style.setProperty('--p', (t % LV_TRAIN_STEP) / LV_TRAIN_STEP); nx.append(mk('span', '', `병영 훈련 ${left}번 더 → Lv.${base + 1}`), bar); }
-  else nx.append(mk('span', '', ss ? `훈련 한도 최대 · SS 장비 ${ss}개 +${ss}` : '훈련 한도 최대 · SS 장비 하나마다 +1'));
-  card.append(cv, mid, nx); return card;
+// 장비 화면의 진급 한도 (v1.23): 제목 줄 가운데에 작게. 계급장 + 훈련으로 연 한도 + SS 장비 보너스(+N) + 다음 단계 안내
+function rankChip(ss) {
+  const t = trainLv(), base = lvBase(t), cap = base + ss, box = el('rankChip'); box.textContent = '';
+  const src = document.createElement('canvas'); src.width = 170; src.height = 52; const sc = src.getContext('2d'); drawRank(sc, cap, 170, 52);
+  let x0 = 170, x1 = 0; const px = sc.getImageData(0, 0, 170, 52).data;      // 계급장이 그려진 폭만 잘라 쓴다 (별 하나면 좁게)
+  for (let x = 0; x < 170; x++) for (let y = 0; y < 52; y++) if (px[(y * 170 + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); break; }
+  const cw = Math.max(1, x1 - x0 + 3), cv = mk('canvas'); cv.width = cw; cv.height = 52; cv.getContext('2d').drawImage(src, -Math.max(0, x0 - 1), 0);
+  const lvl = mk('b', '', 'Lv.' + base); if (ss) lvl.append(mk('em', '', '+' + ss + ' SS'));
+  const tx = mk('span'); tx.append(mk('small', '', base < LV_MAX ? `진급 한도 · 훈련 ${LV_TRAIN_STEP - t % LV_TRAIN_STEP}번 → ${base + 1}` : '진급 한도 · ' + rankOf(cap)), lvl);
+  box.title = ss ? `훈련으로 연 한도 Lv.${base} + SS 장비 ${ss}개` : '병영 훈련과 SS 장비로 늘어나요';
+  box.append(cv, tx);
 }
 function refreshGear() {
   refreshWallet();
@@ -4694,7 +4690,7 @@ function refreshGear() {
     for (const [k, v] of [['공격력', fmt(bp.atk)], ['초당 사격', bp.rate.toFixed(1) + '발'], ['체력', fmt(bp.hp)], ['방어력', `${fmt(bp.def)} (-${Math.round(bp.cut * 100)}%)`], ['치명타', Math.round(bp.crit) + '%'], ['방어 관통', Math.round(bp.pen) + '%']]) {
       const d = mk('div'); d.append(mk('small', '', k), mk('b', '', v)); ps.append(d); }
     { const d = mk('div', 'pow-total'); d.append(mk('small', '', '전투력'), mk('b', '', fmt(powerOf(bp)))); ps.prepend(d); }
-    ps.append(rankCard(ss)); }
+    rankChip(ss); }
   const L = el('slotsL'), R = el('slotsR'); L.textContent = ''; R.textContent = '';
   SLOTS.forEach((s, i) => (i < 3 ? L : R).append(gearTile(save.eq[i] ? gearById(save.eq[i]) : null, i)));
   const dc = el('dollCv').getContext('2d'); dc.clearRect(0, 0, 240, 240); sprC(dc, 'hero_se_idle', 120, 122, 222);
