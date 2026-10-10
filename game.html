@@ -205,7 +205,8 @@ button.cur:focus-visible { outline: .16em solid #fff; outline-offset: .1em; }
 #tabs > .tab { z-index: 1; }
 #tabs::before { background: linear-gradient(#3a4664, #1b2338 40%, #10172a) !important; border-top: .15em solid #55658c; box-shadow: inset 0 .12em 0 rgba(255, 255, 255, .12); }
 #tabs > .tab:not(.main) { background: linear-gradient(#2a3756, #172036); border-color: var(--ink); box-shadow: inset 0 .1em 0 rgba(255, 255, 255, .14), 0 .14em 0 #000; color: #eaf0ff; }
-#lobby:has(#pageHome[hidden]) #tabs::before { top: -.65em; height: auto; }   /* 다른 탭은 위 칸과 이어지게 전체를 칠한다 */
+#lobby:has(#pageHome[hidden]) #tabs::before { top: -.65em; height: auto; }
+#lobby:has(#pageHome:not([hidden])) #tabs::before { top: -.6em !important; background-image: var(--art-navJ, var(--art-nav)), linear-gradient(#141c30, #0b1020) !important; }   /* 기지 화면: 출격 버튼 틀 밑으로 파고들어 이어진다 */   /* 다른 탭은 위 칸과 이어지게 전체를 칠한다 */
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; padding: .1em 0 .22em; background: var(--steel); color: var(--fg-dim); border: .12em solid #000; border-radius: .5em; font-family: var(--font-display); font-weight: 400; font-size: .8em; touch-action: manipulation; }
 .tab { transition: transform .13s ease-out, background .13s; position: relative; }
 .tab canvas, .tab svg { width: 3.3em; height: 3.3em; margin-bottom: -.12em; transition: width .13s, height .13s; filter: drop-shadow(0 .1em 0 rgba(0, 0, 0, .45)); }
@@ -1202,7 +1203,7 @@ const hash = (x, y) => { let h = (Math.imul(x, 374761393) + Math.imul(y, 6682652
 const angLerp = (a, b, t) => { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; };
 const fmt = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + 'M' : n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.floor(n));
 
-const VERSION = 'v1.25', VERSION_DATE = '2026.10.10', VERSION_NOTE = '헬스테이지 라운드 30초 → 20초';
+const VERSION = 'v1.26', VERSION_DATE = '2026.10.10', VERSION_NOTE = '기지 화면 출격 버튼 틀과 하단 탭을 한 덩어리로 이음';
 const OUT = '#0a0f1c';           // 외곽선
 const W = 390;                   // 논리 가로 해상도 (세로는 기기 비율에 맞춤)
 const ZOOM = 1.3;               // 월드 확대
@@ -2376,6 +2377,11 @@ function applyIcoTest() {
 }
 function applyUiIcons() {
   for (const k of ['logo', 'go', 'card', 'nav', 'tab', 'tabY', 'arrL', 'arrR', 'pillC', 'pillN']) el('game').style.setProperty('--art-' + k, `url("${LOBBY_ART[k]}")`);
+  { const im = new Image(); im.onload = () => {      // 기지 화면용 하단 바 (v1.26): 위쪽 테두리·모서리 볼트를 지우고 기둥과 판을 위까지 늘려 출격 버튼 틀 아래에 붙인다 (한 덩어리로 보이게)
+      const c = document.createElement('canvas'), w = c.width = im.width, h = c.height = im.height, x = c.getContext('2d'), r = Math.round(h * 0.52);
+      x.drawImage(im, 0, 0); x.clearRect(0, 0, w, r); for (let y = 0; y < r; y += 4) x.drawImage(im, 0, r, w, 4, 0, y, w, 4);
+      el('game').style.setProperty('--art-navJ', `url("${c.toDataURL('image/webp', 0.9)}")`); };
+    im.src = LOBBY_ART.nav; }
   for (const k in RANK_ART) el('game').style.setProperty('--rk-' + k, `url("${RANK_ART[k]}")`);
   for (const k in POP_ART) el('game').style.setProperty('--pp-' + k, `url("${POP_ART[k]}")`);
   const rs = document.documentElement.style;
